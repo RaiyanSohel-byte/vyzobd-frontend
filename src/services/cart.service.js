@@ -12,5 +12,5 @@ export const cartService = {
       data: cartData,
     }),
 
-  clearCart: (userId) => api.delete(`/api/cart/${userId}/clear`),
+  clearCart: () => api.delete("/api/cart/clear"),
 };

@@ -21,14 +21,6 @@ const ProductCard = ({ product, finalPrice }) => {
           )}
         </div>
 
-        {/* Wishlist Button */}
-        <button
-          aria-label="Add to Wishlist"
-          className="absolute top-3 right-3 z-20 p-2 rounded-full bg-white/50 hover:bg-white backdrop-blur-sm text-primary transition-all shadow-sm opacity-0 group-hover:opacity-100 translate-x-4 group-hover:translate-x-0 duration-300 ease-out"
-        >
-          <FiHeart className="w-4 h-4" />
-        </button>
-
         <Link
           href={`/products/${product._id}`}
           className="absolute inset-0 z-10"
@@ -41,17 +33,6 @@ const ProductCard = ({ product, finalPrice }) => {
             className="object-cover object-center transform transition-transform duration-700 ease-in-out group-hover:scale-105"
           />
         </Link>
-
-        {/* Quick Add to Cart Button (Slides up on hover) */}
-        <div className="absolute bottom-0 left-0 w-full p-4 z-20 transform translate-y-full opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 ease-out">
-          <button
-            disabled={product.stock === 0}
-            className="w-full bg-accent/90 cursor-pointer backdrop-blur-md hover:bg-primary text-white text-sm font-semibold uppercase tracking-wider py-3.5 rounded-sm flex items-center justify-center gap-2 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
-          >
-            <FiShoppingCart className="w-4 h-4" />
-            {product.stock === 0 ? "Out of Stock" : "Add to Cart"}
-          </button>
-        </div>
       </div>
 
       {/* Product Info */}

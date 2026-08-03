@@ -6,24 +6,6 @@ import { notFound } from "next/navigation";
 import { fetchAPI } from "@/lib/api";
 import AddToCartForm from "@/components/shared/AddToCartForm";
 
-// Helper to map string colors from the DB to hex codes for the UI
-const getColorHex = (colorName) => {
-  const map = {
-    Black: "#000000",
-    White: "#FFFFFF",
-    Grey: "#808080",
-    Blue: "#2563EB",
-    Red: "#DC2626",
-    Green: "#16A34A",
-    Tan: "#D2B48C",
-    Navy: "#000080",
-    Charcoal: "#333333",
-    Olive: "#556B2F",
-    Camel: "#C19A6B",
-  };
-  return map[colorName] || colorName.toLowerCase(); // Fallback to CSS named color
-};
-
 const ProductDetails = async ({ params }) => {
   // Await params as required in Next.js 15+
   const { slug } = await params;
@@ -140,23 +122,6 @@ const ProductDetails = async ({ params }) => {
             </p>
 
             <hr className="border-primary/10 mb-8" />
-
-            {/* Form for Add to Cart */}
-            <form className="space-y-8">
-              {/* Stock Indicator */}
-              <div className="flex items-center gap-2 pt-2">
-                <span
-                  className={`w-1.5 h-1.5 rounded-full ${
-                    product.stock > 0 ? "bg-emerald-500" : "bg-accent"
-                  }`}
-                />
-                <span className="text-xs tracking-widest text-primary/60">
-                  {product.stock > 0 ?
-                    `${product.stock} in stock - Ready to ship`
-                  : "Currently out of stock"}
-                </span>
-              </div>
-            </form>
 
             <AddToCartForm product={product} />
 

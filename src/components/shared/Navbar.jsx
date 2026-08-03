@@ -70,6 +70,8 @@ export default function Navbar() {
       setIsDropdownOpen(false);
       setIsOpen(false);
       toast.success("Logged Out");
+      router.replace("/login");
+      router.refresh();
     } catch (error) {
       console.error("Logout failed", error);
     }
@@ -139,6 +141,12 @@ export default function Navbar() {
                         className="px-4 py-4 text-xs uppercase tracking-widest text-primary border-b border-primary/10 hover:bg-accent hover:text-secondary transition-colors"
                       >
                         Profile
+                      </Link>
+                      <Link
+                        href="/orders"
+                        className="px-4 py-4 text-xs uppercase tracking-widest text-primary border-b border-primary/10 hover:bg-accent hover:text-secondary transition-colors"
+                      >
+                        My Orders
                       </Link>
                       <button
                         onClick={handleLogout}
@@ -224,6 +232,12 @@ export default function Navbar() {
                   className="block px-6 py-5 text-sm font-semibold tracking-widest uppercase text-primary border-b border-primary/5 hover:bg-primary/10 transition-colors"
                 >
                   Profile
+                </Link>
+                <Link
+                  href="/orders"
+                  className="block px-6 py-5 text-sm font-semibold tracking-widest uppercase text-primary border-b border-primary/5 hover:bg-primary/10 transition-colors"
+                >
+                  My Orders
                 </Link>
                 <button
                   onClick={handleLogout}

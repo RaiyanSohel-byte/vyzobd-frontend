@@ -45,8 +45,6 @@ const CartItemCard = memo(({ item, isUpdating, onUpdate, onRemove }) => {
         onClick={() =>
           onRemove({
             productId: product._id,
-            color: item.color,
-            size: item.size,
           })
         }
         disabled={isUpdating}
@@ -91,31 +89,6 @@ const CartItemCard = memo(({ item, isUpdating, onUpdate, onRemove }) => {
               </span>
             )}
           </div>
-
-          {/* Size & Color Variations */}
-          <div className="flex flex-wrap items-center gap-4 text-xs text-primary/70 font-light mb-6">
-            {product.selectedSize && (
-              <p>
-                <span className="font-medium text-primary">Size:</span>{" "}
-                {product.selectedSize}
-              </p>
-            )}
-            {product.selectedSize && product.selectedColor && (
-              <div className="w-px h-3 bg-primary/20 hidden sm:block"></div>
-            )}
-            {product.selectedColor && (
-              <p className="flex items-center gap-1.5">
-                <span className="font-medium text-primary">Color:</span>
-                <span
-                  className="w-3 h-3 rounded-full border border-primary/20 inline-block"
-                  style={{
-                    backgroundColor: product.selectedColor.hex || "#000",
-                  }}
-                />
-                {product.selectedColor.name}
-              </p>
-            )}
-          </div>
         </div>
 
         {/* Quantity Selector */}
@@ -129,8 +102,6 @@ const CartItemCard = memo(({ item, isUpdating, onUpdate, onRemove }) => {
                 onUpdate(
                   {
                     productId: product._id,
-                    color: item.color,
-                    size: item.size,
                   },
                   quantity + 1,
                   quantity,
@@ -196,7 +167,7 @@ export default function CartSection() {
 
   // Optimistic UI Update: Fast quantity mapping without full refetch
   const updateQuantity = useCallback(
-    async ({ productId, color, size }, newQuantity, currentQuantity) => {
+    async ({ productId }, newQuantity, currentQuantity) => {
       if (newQuantity < 1) return;
 
       setCartItems((prev) =>
@@ -211,8 +182,7 @@ export default function CartSection() {
       try {
         await cartService.updateCart({
           productId,
-          color,
-          size,
+
           quantity: newQuantity,
         });
         // Success: No need to refetch, UI is already updated
@@ -241,26 +211,17 @@ export default function CartSection() {
 
   // Optimistic UI Remove
   const removeItem = useCallback(
-    async ({ productId, color, size }) => {
+    async ({ productId }) => {
       const previousItems = [...cartItems];
 
       setCartItems((prev) =>
-        prev.filter(
-          (item) =>
-            !(
-              item.product._id === productId &&
-              item.color === color &&
-              item.size === size
-            ),
-        ),
+        prev.filter((item) => !(item.product._id === productId)),
       );
       setUpdatingItems((prev) => new Set(prev).add(productId));
 
       try {
         await cartService.removeItem({
           productId,
-          color,
-          size,
         });
         toast.success("Item removed from cart");
       } catch (err) {
@@ -489,10 +450,13 @@ export default function CartSection() {
                 <span className="text-xl font-bold">${total.toFixed(2)}</span>
               </div>
 
-              <button className="w-full bg-accent text-white text-sm font-bold px-8 py-4 rounded-md hover:bg-primary/90 transition-all shadow-sm flex items-center justify-center gap-2 group mb-4 cursor-pointer">
-                Order Now
-                <FiArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </button>
+              <Link href={"/checkout"}>
+                {" "}
+                <button className="w-full bg-accent text-white text-sm font-bold px-8 py-4 rounded-md hover:bg-primary/90 transition-all shadow-sm flex items-center justify-center gap-2 group mb-4 cursor-pointer">
+                  Proceed to Checkout
+                  <FiArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </button>
+              </Link>
             </div>
 
             {/* Optional Promotional Block */}

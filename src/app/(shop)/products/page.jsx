@@ -8,17 +8,6 @@ import { FiSearch, FiSliders, FiX, FiStar, FiCheck } from "react-icons/fi";
 // Import your helper functions (Adjust the path if your lib folder is located elsewhere)
 import { getProducts, getCategories } from "@/lib/api";
 
-const SIZES = ["XS", "S", "M", "L", "XL", "XXL", "40", "41", "42", "43"];
-const COLORS = [
-  { name: "Black", hex: "#000000" },
-  { name: "White", hex: "#FFFFFF" },
-  { name: "Charcoal", hex: "#333333" },
-  { name: "Camel", hex: "#C19A6B" },
-  { name: "Olive", hex: "#556B2F" },
-  { name: "Beige", hex: "#F5F5DC" },
-  { name: "Red", hex: "#FF0000" },
-];
-
 export default function ProductsPage() {
   // Data state
   const [products, setProducts] = useState([]);
@@ -29,8 +18,7 @@ export default function ProductsPage() {
   // Filter state management
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
-  const [selectedSizes, setSelectedSizes] = useState([]);
-  const [selectedColors, setSelectedColors] = useState([]);
+
   const [priceRange, setPriceRange] = useState([0, 500]);
   const [inStockOnly, setInStockOnly] = useState(false);
   const [sortBy, setSortBy] = useState("featured");
@@ -70,24 +58,10 @@ export default function ProductsPage() {
     loadData();
   }, []);
 
-  // Toggle helpers
-  const toggleSize = (size) => {
-    setSelectedSizes((prev) =>
-      prev.includes(size) ? prev.filter((s) => s !== size) : [...prev, size],
-    );
-  };
-
-  const toggleColor = (color) => {
-    setSelectedColors((prev) =>
-      prev.includes(color) ? prev.filter((c) => c !== color) : [...prev, color],
-    );
-  };
-
   const clearAllFilters = () => {
     setSearchQuery("");
     setSelectedCategory("All");
-    setSelectedSizes([]);
-    setSelectedColors([]);
+
     setPriceRange([0, 500]);
     setInStockOnly(false);
     setSortBy("featured");
@@ -123,20 +97,7 @@ export default function ProductsPage() {
         if (inStockOnly && product.stock <= 0) {
           return false;
         }
-        // Sizes
-        if (
-          selectedSizes.length > 0 &&
-          !product.sizes?.some((size) => selectedSizes.includes(size))
-        ) {
-          return false;
-        }
-        // Colors
-        if (
-          selectedColors.length > 0 &&
-          !product.colors?.some((color) => selectedColors.includes(color))
-        ) {
-          return false;
-        }
+
         return true;
       })
       .sort((a, b) => {
@@ -165,15 +126,12 @@ export default function ProductsPage() {
     selectedCategory,
     priceRange,
     inStockOnly,
-    selectedSizes,
-    selectedColors,
+
     sortBy,
   ]);
 
   const activeFiltersCount =
     (selectedCategory !== "All" ? 1 : 0) +
-    selectedSizes.length +
-    selectedColors.length +
     (inStockOnly ? 1 : 0) +
     (priceRange[0] > 0 || priceRange[1] < 500 ? 1 : 0);
 
@@ -259,20 +217,7 @@ export default function ProductsPage() {
                 onRemove={() => setSelectedCategory("All")}
               />
             )}
-            {selectedSizes.map((size) => (
-              <FilterTag
-                key={size}
-                label={`Size: ${size}`}
-                onRemove={() => toggleSize(size)}
-              />
-            ))}
-            {selectedColors.map((color) => (
-              <FilterTag
-                key={color}
-                label={`Color: ${color}`}
-                onRemove={() => toggleColor(color)}
-              />
-            ))}
+
             {inStockOnly && (
               <FilterTag
                 label="In Stock Only"
@@ -302,10 +247,6 @@ export default function ProductsPage() {
               categories={categories}
               selectedCategory={selectedCategory}
               setSelectedCategory={setSelectedCategory}
-              selectedSizes={selectedSizes}
-              toggleSize={toggleSize}
-              selectedColors={selectedColors}
-              toggleColor={toggleColor}
               priceRange={priceRange}
               setPriceRange={setPriceRange}
               inStockOnly={inStockOnly}
@@ -387,10 +328,6 @@ export default function ProductsPage() {
                 categories={categories}
                 selectedCategory={selectedCategory}
                 setSelectedCategory={setSelectedCategory}
-                selectedSizes={selectedSizes}
-                toggleSize={toggleSize}
-                selectedColors={selectedColors}
-                toggleColor={toggleColor}
                 priceRange={priceRange}
                 setPriceRange={setPriceRange}
                 inStockOnly={inStockOnly}
@@ -419,10 +356,7 @@ function SidebarContent({
   categories,
   selectedCategory,
   setSelectedCategory,
-  selectedSizes,
-  toggleSize,
-  selectedColors,
-  toggleColor,
+
   priceRange,
   setPriceRange,
   inStockOnly,
@@ -490,64 +424,6 @@ function SidebarContent({
           className="w-full accent-accent cursor-pointer"
         />
       </div>
-
-      {/* Sizes Filter */}
-      {/* <div>
-        <h4 className="text-xs font-semibold uppercase tracking-wider text-primary/60 mb-3">
-          Sizes
-        </h4>
-        <div className="grid grid-cols-3 gap-2">
-          {SIZES.map((size) => {
-            const isSelected = selectedSizes.includes(size);
-            return (
-              <button
-                key={size}
-                onClick={() => toggleSize(size)}
-                className={`text-xs py-2 rounded-md border font-medium transition-all ${
-                  isSelected ?
-                    "border-primary bg-primary text-white"
-                  : "border-primary/20 text-primary hover:border-primary/50"
-                }`}
-              >
-                {size}
-              </button>
-            );
-          })}
-        </div>
-      </div> */}
-
-      {/* Colors Filter */}
-      {/* <div>
-        <h4 className="text-xs font-semibold uppercase tracking-wider text-primary/60 mb-3">
-          Colors
-        </h4>
-        <div className="flex flex-wrap gap-3">
-          {COLORS.map((color) => {
-            const isSelected = selectedColors.includes(color.name);
-            return (
-              <button
-                key={color.name}
-                onClick={() => toggleColor(color.name)}
-                title={color.name}
-                className={`relative w-7 h-7 rounded-full border transition-transform ${
-                  isSelected ?
-                    "scale-110 ring-2 ring-accent ring-offset-2"
-                  : "border-primary/20"
-                }`}
-                style={{ backgroundColor: color.hex }}
-              >
-                {isSelected && (
-                  <FiCheck
-                    className={`w-3.5 h-3.5 absolute inset-0 m-auto ${
-                      color.name === "White" ? "text-black" : "text-white"
-                    }`}
-                  />
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </div> */}
 
       {/* Stock Filter */}
       <div className="pt-2 border-t border-primary/10">
@@ -652,25 +528,6 @@ function ProductCard({ product }) {
             {product.discount > 0 && (
               <span className="text-xs text-primary/40 line-through">
                 ${product.price.toFixed(2)}
-              </span>
-            )}
-          </div>
-
-          {/* Color Dots */}
-          <div className="flex items-center -space-x-1">
-            {product.colors?.slice(0, 3).map((col, idx) => (
-              <span
-                key={idx}
-                className="w-2.5 h-2.5 rounded-full border border-white shadow-2xs"
-                style={{
-                  backgroundColor:
-                    COLORS.find((c) => c.name === col)?.hex || "#ccc",
-                }}
-              />
-            ))}
-            {product.colors?.length > 3 && (
-              <span className="text-[10px] text-primary/50 pl-1">
-                +{product.colors.length - 3}
               </span>
             )}
           </div>
