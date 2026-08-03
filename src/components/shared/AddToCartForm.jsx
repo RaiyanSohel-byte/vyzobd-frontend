@@ -1,6 +1,7 @@
 "use client";
 
 import { useAuth } from "@/hooks/useAuth";
+import { useCart } from "@/hooks/useCart";
 import { cartService } from "@/services/cart.service";
 import React, { useState } from "react";
 import toast from "react-hot-toast";
@@ -26,6 +27,7 @@ const getColorHex = (colorName) => {
 
 export default function AddToCartForm({ product }) {
   const { user } = useAuth();
+  const { setCartCount } = useCart();
   const [quantity, setQuantity] = useState(1);
   const [selectedColor, setSelectedColor] = useState("");
   const [selectedSize, setSelectedSize] = useState("");
@@ -67,7 +69,7 @@ export default function AddToCartForm({ product }) {
         color: selectedColor,
         size: selectedSize,
       });
-
+      setCartCount((prev) => prev + 1);
       toast.success("Added to cart.");
     } catch (error) {
       toast.error(error.response?.data?.message);

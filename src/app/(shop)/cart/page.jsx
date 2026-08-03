@@ -14,6 +14,7 @@ import {
 } from "react-icons/fi";
 import { cartService } from "@/services/cart.service";
 import toast from "react-hot-toast";
+import { useCart } from "@/hooks/useCart";
 
 // Extracted into a memoized component to prevent re-rendering all items when one updates
 const CartItemCard = memo(({ item, isUpdating, onUpdate, onRemove }) => {
@@ -167,7 +168,7 @@ export default function CartSection() {
   const [cartItems, setCartItems] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-
+  const { setCartCount } = useCart();
   // Shipping zone state (insideDhaka or outsideDhaka)
   const [shippingZone, setShippingZone] = useState("insideDhaka");
 
@@ -294,6 +295,10 @@ export default function CartSection() {
 
     return { subtotal: sub, shippingCost: shipping, total: tot };
   }, [cartItems, shippingZone]);
+
+  useEffect(() => {
+    setCartCount(cartItems.length);
+  }, [cartItems, setCartCount]);
 
   // ================= State Returns ================= //
 

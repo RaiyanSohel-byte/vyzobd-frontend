@@ -16,6 +16,7 @@ import logoImg from "../../../public/logos/navLogo.png";
 
 import { useAuth } from "@/hooks/useAuth";
 import toast from "react-hot-toast";
+import { useCart } from "@/hooks/useCart";
 
 const NAV_LINKS = [
   { name: "Home", href: "/" },
@@ -30,7 +31,7 @@ export default function Navbar() {
   const dropdownRef = useRef(null);
   const pathname = usePathname();
   const router = useRouter();
-
+  const { cartCount } = useCart();
   // Consume the real user state and logout function from AuthContext
   const { user, logout } = useAuth();
   console.log("Navbar user:", user);
@@ -153,9 +154,9 @@ export default function Navbar() {
                   className="relative text-primary hover:text-accent transition-colors duration-300 flex items-center justify-center group"
                   aria-label="Shopping Cart"
                 >
-                  <FiShoppingCart className="w-5 h-5 md:w-6 md:h-6 transform group-hover:scale-110 transition-transform" />
-                  <span className="absolute -top-1.5 -right-2 bg-accent text-white text-[10px] font-bold w-4 h-4 md:w-5 md:h-5 rounded-full flex items-center justify-center shadow-md">
-                    3
+                  <FiShoppingCart className="w-8 h-8 md:w-6 md:h-6 transform group-hover:scale-110 transition-transform" />
+                  <span className="absolute -top-1.5 -right-2 bg-accent text-white text-[12px] font-bold w-6 h-6 md:w-5 md:h-5 rounded-full flex items-center justify-center shadow-md">
+                    {cartCount}
                   </span>
                 </Link>
               </>
