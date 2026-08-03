@@ -1,88 +1,14 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import {
-  FiSearch,
-  FiSliders,
-  FiX,
-  FiChevronDown,
-  FiStar,
-  FiGrid,
-  FiList,
-  FiCheck,
-} from "react-icons/fi";
+import { FiSearch, FiSliders, FiX, FiStar, FiCheck } from "react-icons/fi";
 
-// --- Sample Mock Data (Replace with server fetch or API call) ---
-const MOCK_PRODUCTS = [
-  {
-    _id: "1",
-    title: "Architectural Wool Overcoat",
-    slug: "architectural-wool-overcoat",
-    description:
-      "Tailored heavyweight wool blend coat with structured shoulders.",
-    price: 320,
-    discount: 15,
-    category: "Outerwear",
-    images: ["/placeholder.jpg"],
-    sizes: ["S", "M", "L", "XL"],
-    colors: ["Black", "Charcoal", "Camel"],
-    stock: 12,
-    rating: 4.8,
-    numReviews: 24,
-    isFeatured: true,
-    createdAt: "2026-01-10",
-    updatedAt: "2026-01-10",
-  },
-  {
-    _id: "2",
-    title: "Minimalist Linen Trousers",
-    slug: "minimalist-linen-trousers",
-    description:
-      "Breathable organic linen with an elasticated drawstring waistband.",
-    price: 110,
-    discount: 0,
-    category: "Pants",
-    images: ["/placeholder.jpg"],
-    sizes: ["M", "L"],
-    colors: ["Beige", "White"],
-    stock: 0,
-    rating: 4.2,
-    numReviews: 8,
-    isFeatured: false,
-    createdAt: "2026-02-01",
-    updatedAt: "2026-02-01",
-  },
-  {
-    _id: "3",
-    title: "Heavyweight Boxy Tee",
-    slug: "heavyweight-boxy-tee",
-    description: "280 GSM combed cotton structured silhouette oversized fit.",
-    price: 65,
-    discount: 10,
-    category: "T-Shirts",
-    images: ["/placeholder.jpg"],
-    sizes: ["XS", "S", "M", "L", "XL"],
-    colors: ["Black", "White", "Olive"],
-    stock: 45,
-    rating: 4.9,
-    numReviews: 52,
-    isFeatured: true,
-    createdAt: "2026-02-15",
-    updatedAt: "2026-02-15",
-  },
-];
+// Import your helper functions (Adjust the path if your lib folder is located elsewhere)
+import { getProducts, getCategories } from "@/lib/api";
 
-const CATEGORIES = [
-  "All",
-  "Outerwear",
-  "T-Shirts",
-  "Pants",
-  "Accessories",
-  "Knitwear",
-];
-const SIZES = ["XS", "S", "M", "L", "XL", "XXL"];
+const SIZES = ["XS", "S", "M", "L", "XL", "XXL", "40", "41", "42", "43"];
 const COLORS = [
   { name: "Black", hex: "#000000" },
   { name: "White", hex: "#FFFFFF" },
@@ -90,10 +16,17 @@ const COLORS = [
   { name: "Camel", hex: "#C19A6B" },
   { name: "Olive", hex: "#556B2F" },
   { name: "Beige", hex: "#F5F5DC" },
+  { name: "Red", hex: "#FF0000" },
 ];
 
 export default function ProductsPage() {
-  // State management
+  // Data state
+  const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState(["All"]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Filter state management
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedSizes, setSelectedSizes] = useState([]);
@@ -102,6 +35,40 @@ export default function ProductsPage() {
   const [inStockOnly, setInStockOnly] = useState(false);
   const [sortBy, setSortBy] = useState("featured");
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
+
+  // Fetch data on mount
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setIsLoading(true);
+        const [productsRes, categoriesRes] = await Promise.all([
+          getProducts(),
+          getCategories(),
+        ]);
+
+        // Handle products data structure
+        const productList = productsRes?.data || productsRes || [];
+        setProducts(productList);
+
+        // Handle categories data structure (supporting string arrays or object arrays with name/title)
+        const categoryList = categoriesRes?.data || categoriesRes || [];
+        const formattedCategories = categoryList.map((cat) =>
+          typeof cat === "string" ? cat : cat.name || cat.title || cat.category,
+        );
+
+        setCategories(["All", ...new Set(formattedCategories.filter(Boolean))]);
+      } catch (err) {
+        console.error("Failed to fetch data:", err);
+        setError(
+          "Failed to load products and categories. Please try again later.",
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadData();
+  }, []);
 
   // Toggle helpers
   const toggleSize = (size) => {
@@ -128,64 +95,72 @@ export default function ProductsPage() {
 
   // Filter & Sort Logic
   const filteredProducts = useMemo(() => {
-    return MOCK_PRODUCTS.filter((product) => {
-      // Search
-      if (
-        searchQuery &&
-        !product.title.toLowerCase().includes(searchQuery.toLowerCase()) &&
-        !product.description.toLowerCase().includes(searchQuery.toLowerCase())
-      ) {
-        return false;
-      }
-      // Category
-      if (selectedCategory !== "All" && product.category !== selectedCategory) {
-        return false;
-      }
-      // Price
-      const finalPrice = product.price * (1 - (product.discount || 0) / 100);
-      if (finalPrice < priceRange[0] || finalPrice > priceRange[1]) {
-        return false;
-      }
-      // Stock
-      if (inStockOnly && product.stock <= 0) {
-        return false;
-      }
-      // Sizes
-      if (
-        selectedSizes.length > 0 &&
-        !product.sizes.some((size) => selectedSizes.includes(size))
-      ) {
-        return false;
-      }
-      // Colors
-      if (
-        selectedColors.length > 0 &&
-        !product.colors.some((color) => selectedColors.includes(color))
-      ) {
-        return false;
-      }
-      return true;
-    }).sort((a, b) => {
-      const priceA = a.price * (1 - (a.discount || 0) / 100);
-      const priceB = b.price * (1 - (b.discount || 0) / 100);
+    return products
+      .filter((product) => {
+        // Search
+        if (
+          searchQuery &&
+          !product.title?.toLowerCase().includes(searchQuery.toLowerCase()) &&
+          !product.description
+            ?.toLowerCase()
+            .includes(searchQuery.toLowerCase())
+        ) {
+          return false;
+        }
+        // Category
+        if (
+          selectedCategory !== "All" &&
+          product.category !== selectedCategory
+        ) {
+          return false;
+        }
+        // Price
+        const finalPrice = product.price * (1 - (product.discount || 0) / 100);
+        if (finalPrice < priceRange[0] || finalPrice > priceRange[1]) {
+          return false;
+        }
+        // Stock
+        if (inStockOnly && product.stock <= 0) {
+          return false;
+        }
+        // Sizes
+        if (
+          selectedSizes.length > 0 &&
+          !product.sizes?.some((size) => selectedSizes.includes(size))
+        ) {
+          return false;
+        }
+        // Colors
+        if (
+          selectedColors.length > 0 &&
+          !product.colors?.some((color) => selectedColors.includes(color))
+        ) {
+          return false;
+        }
+        return true;
+      })
+      .sort((a, b) => {
+        const priceA = a.price * (1 - (a.discount || 0) / 100);
+        const priceB = b.price * (1 - (b.discount || 0) / 100);
 
-      switch (sortBy) {
-        case "price-low":
-          return priceA - priceB;
-        case "price-high":
-          return priceB - priceA;
-        case "rating":
-          return b.rating - a.rating;
-        case "newest":
-          return (
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-          );
-        case "featured":
-        default:
-          return (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0);
-      }
-    });
+        switch (sortBy) {
+          case "price-low":
+            return priceA - priceB;
+          case "price-high":
+            return priceB - priceA;
+          case "rating":
+            return (b.rating || 0) - (a.rating || 0);
+          case "newest":
+            const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+            const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+            return dateB - dateA;
+          case "featured":
+          default:
+            return (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0);
+        }
+      });
   }, [
+    products,
     searchQuery,
     selectedCategory,
     priceRange,
@@ -324,6 +299,7 @@ export default function ProductsPage() {
           {/* Desktop Sidebar Filters */}
           <aside className="hidden lg:block lg:col-span-3 bg-white p-6 rounded-lg border border-primary/10 shadow-sm sticky top-6 space-y-8">
             <SidebarContent
+              categories={categories}
               selectedCategory={selectedCategory}
               setSelectedCategory={setSelectedCategory}
               selectedSizes={selectedSizes}
@@ -339,9 +315,26 @@ export default function ProductsPage() {
             />
           </aside>
 
-          {/* Product Grid */}
+          {/* Product Grid / Loading / Error States */}
           <main className="lg:col-span-9">
-            {filteredProducts.length === 0 ?
+            {isLoading ?
+              <div className="flex flex-col items-center justify-center py-32 space-y-4">
+                <div className="w-8 h-8 border-2 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+                <p className="text-xs uppercase tracking-widest text-primary/50">
+                  Loading Collection...
+                </p>
+              </div>
+            : error ?
+              <div className="bg-white rounded-lg border border-red-200 p-12 text-center my-8">
+                <p className="text-sm font-medium text-red-500 mb-2">{error}</p>
+                <button
+                  onClick={() => window.location.reload()}
+                  className="mt-4 text-xs uppercase tracking-widest text-primary underline underline-offset-4"
+                >
+                  Try Again
+                </button>
+              </div>
+            : filteredProducts.length === 0 ?
               <div className="bg-white rounded-lg border border-primary/10 p-12 text-center my-8">
                 <p className="text-lg font-medium text-primary mb-2">
                   No products match your criteria
@@ -359,7 +352,10 @@ export default function ProductsPage() {
               </div>
             : <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredProducts.map((product) => (
-                  <ProductCard key={product._id} product={product} />
+                  <ProductCard
+                    key={product._id || product.slug}
+                    product={product}
+                  />
                 ))}
               </div>
             }
@@ -388,6 +384,7 @@ export default function ProductsPage() {
             </div>
             <div className="p-6 overflow-y-auto flex-1 space-y-8">
               <SidebarContent
+                categories={categories}
                 selectedCategory={selectedCategory}
                 setSelectedCategory={setSelectedCategory}
                 selectedSizes={selectedSizes}
@@ -419,6 +416,7 @@ export default function ProductsPage() {
 
 // --- Sidebar Filter Section Component ---
 function SidebarContent({
+  categories,
   selectedCategory,
   setSelectedCategory,
   selectedSizes,
@@ -454,7 +452,7 @@ function SidebarContent({
           Category
         </h4>
         <div className="space-y-1.5">
-          {CATEGORIES.map((cat) => (
+          {categories.map((cat) => (
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
@@ -494,7 +492,7 @@ function SidebarContent({
       </div>
 
       {/* Sizes Filter */}
-      <div>
+      {/* <div>
         <h4 className="text-xs font-semibold uppercase tracking-wider text-primary/60 mb-3">
           Sizes
         </h4>
@@ -516,10 +514,10 @@ function SidebarContent({
             );
           })}
         </div>
-      </div>
+      </div> */}
 
       {/* Colors Filter */}
-      <div>
+      {/* <div>
         <h4 className="text-xs font-semibold uppercase tracking-wider text-primary/60 mb-3">
           Colors
         </h4>
@@ -549,7 +547,7 @@ function SidebarContent({
             );
           })}
         </div>
-      </div>
+      </div> */}
 
       {/* Stock Filter */}
       <div className="pt-2 border-t border-primary/10">
@@ -604,10 +602,7 @@ function ProductCard({ product }) {
           </span>
         )}
 
-        <Link
-          href={`/products/${product.slug}`}
-          className="block w-full h-full"
-        >
+        <Link href={`/products/${product._id}`} className="block w-full h-full">
           {product.images?.[0] ?
             <Image
               src={product.images[0]}
@@ -615,7 +610,7 @@ function ProductCard({ product }) {
               fill
               className="object-cover group-hover:scale-105 transition-transform duration-500"
             />
-          : <div className="w-full h-full flex items-center justify-center text-primary/30 text-xs">
+          : <div className="w-full h-full flex items-center justify-center text-primary/30 text-xs uppercase tracking-widest">
               No Image
             </div>
           }
@@ -626,14 +621,18 @@ function ProductCard({ product }) {
       <div className="p-4 flex flex-col flex-1 justify-between">
         <div>
           <div className="flex items-center justify-between text-xs text-primary/50 mb-1">
-            <span>{product.category}</span>
+            <span className="uppercase tracking-widest text-[10px]">
+              {product.category}
+            </span>
             <div className="flex items-center gap-1 text-amber-500">
               <FiStar className="w-3 h-3 fill-amber-500" />
-              <span className="font-medium text-primary">{product.rating}</span>
+              <span className="font-medium text-primary">
+                {product.rating || "New"}
+              </span>
             </div>
           </div>
 
-          <Link href={`/products/${product.slug}`}>
+          <Link href={`/products/${product._id}`}>
             <h3 className="font-semibold text-sm text-primary group-hover:text-accent transition-colors line-clamp-1 mb-1">
               {product.title}
             </h3>
@@ -659,7 +658,7 @@ function ProductCard({ product }) {
 
           {/* Color Dots */}
           <div className="flex items-center -space-x-1">
-            {product.colors.slice(0, 3).map((col, idx) => (
+            {product.colors?.slice(0, 3).map((col, idx) => (
               <span
                 key={idx}
                 className="w-2.5 h-2.5 rounded-full border border-white shadow-2xs"
@@ -669,7 +668,7 @@ function ProductCard({ product }) {
                 }}
               />
             ))}
-            {product.colors.length > 3 && (
+            {product.colors?.length > 3 && (
               <span className="text-[10px] text-primary/50 pl-1">
                 +{product.colors.length - 3}
               </span>

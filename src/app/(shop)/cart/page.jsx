@@ -1,68 +1,376 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState, useCallback, useMemo, memo } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { FiMinus, FiPlus, FiX, FiArrowRight, FiLock } from "react-icons/fi";
+import {
+  FiMinus,
+  FiPlus,
+  FiX,
+  FiArrowRight,
+  FiLock,
+  FiAlertCircle,
+  FiRefreshCw,
+} from "react-icons/fi";
+import { cartService } from "@/services/cart.service";
+import toast from "react-hot-toast";
 
-// --- Mock Data ---
-const INITIAL_CART = [
-  {
-    _id: "cart-1",
-    productId: "1",
-    title: "Architectural Wool Overcoat",
-    slug: "architectural-wool-overcoat",
-    price: 320,
-    discount: 15, // 15% off
-    image: "/placeholder.jpg",
-    selectedSize: "M",
-    selectedColor: { name: "Charcoal", hex: "#333333" },
-    quantity: 1,
-    stock: 12,
-  },
-  {
-    _id: "cart-2",
-    productId: "3",
-    title: "Heavyweight Boxy Tee",
-    slug: "heavyweight-boxy-tee",
-    price: 65,
-    discount: 0,
-    image: "/placeholder.jpg",
-    selectedSize: "L",
-    selectedColor: { name: "Olive", hex: "#556B2F" },
-    quantity: 2,
-    stock: 45,
-  },
-];
+// Extracted into a memoized component to prevent re-rendering all items when one updates
+const CartItemCard = memo(({ item, isUpdating, onUpdate, onRemove }) => {
+  const [imgError, setImgError] = useState(false);
+
+  const product = item?.product;
+  if (!product) return null;
+
+  // Fixed mapping: uses item.quantity instead of item.product.quantity
+  const quantity = item?.quantity || 1;
+  const itemFinalPrice =
+    (product.price || 0) * (1 - (product.discount || 0) / 100);
+
+  // Safe image fallback
+  const fallbackImg =
+    "https://placehold.co/300x400/eeeeee/999999?text=No+Image";
+  const imgSrc =
+    !imgError && product.images?.[0] ? product.images[0] : fallbackImg;
+
+  return (
+    <div
+      className={`bg-white p-4 sm:p-6 rounded-lg border border-primary/5 shadow-xs flex flex-col sm:flex-row gap-6 relative transition-opacity duration-300 ${
+        isUpdating ? "opacity-50 pointer-events-none" : ""
+      }`}
+    >
+      {/* Remove Button */}
+      <button
+        onClick={() =>
+          onRemove({
+            productId: product._id,
+            color: item.color,
+            size: item.size,
+          })
+        }
+        disabled={isUpdating}
+        className="absolute top-4 right-4 sm:top-6 sm:right-6 text-primary/40 hover:text-accent transition-colors disabled:opacity-50"
+        aria-label={`Remove ${product.title || "item"} from cart`}
+      >
+        <FiX className="w-5 h-5" />
+      </button>
+
+      {/* Image */}
+      <Link
+        href={`/products/${product.slug || ""}`}
+        className="block flex-shrink-0 w-24 h-32 sm:w-32 sm:h-40 bg-secondary rounded-md relative overflow-hidden"
+      >
+        <Image
+          src={imgSrc}
+          alt={product.title || "Product Image"}
+          fill
+          sizes="(max-width: 640px) 96px, 128px"
+          onError={() => setImgError(true)}
+          className="object-cover hover:scale-105 transition-transform duration-500"
+        />
+      </Link>
+
+      {/* Details */}
+      <div className="flex flex-col flex-1 justify-between">
+        <div className="pr-8">
+          <Link href={`/products/${product.slug || ""}`}>
+            <h3 className="text-base font-semibold hover:text-accent transition-colors line-clamp-1 mb-1">
+              {product.title || "Untitled Product"}
+            </h3>
+          </Link>
+
+          {/* Price Block */}
+          <div className="flex items-baseline gap-2 mb-4">
+            <span className="text-sm font-bold">
+              ${itemFinalPrice.toFixed(2)}
+            </span>
+            {(product.discount || 0) > 0 && (
+              <span className="text-xs text-primary/40 line-through">
+                ${(product.price || 0).toFixed(2)}
+              </span>
+            )}
+          </div>
+
+          {/* Size & Color Variations */}
+          <div className="flex flex-wrap items-center gap-4 text-xs text-primary/70 font-light mb-6">
+            {product.selectedSize && (
+              <p>
+                <span className="font-medium text-primary">Size:</span>{" "}
+                {product.selectedSize}
+              </p>
+            )}
+            {product.selectedSize && product.selectedColor && (
+              <div className="w-px h-3 bg-primary/20 hidden sm:block"></div>
+            )}
+            {product.selectedColor && (
+              <p className="flex items-center gap-1.5">
+                <span className="font-medium text-primary">Color:</span>
+                <span
+                  className="w-3 h-3 rounded-full border border-primary/20 inline-block"
+                  style={{
+                    backgroundColor: product.selectedColor.hex || "#000",
+                  }}
+                />
+                {product.selectedColor.name}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Quantity Selector */}
+        <div className="flex items-center gap-4">
+          <span className="text-xs font-semibold uppercase tracking-wider text-primary/50">
+            Qty
+          </span>
+          <div className="flex items-center bg-secondary rounded-md border border-primary/10 w-24">
+            <button
+              onClick={() =>
+                onUpdate(
+                  {
+                    productId: product._id,
+                    color: item.color,
+                    size: item.size,
+                  },
+                  quantity + 1,
+                  quantity,
+                )
+              }
+              className="flex-1 flex items-center justify-center py-2 text-primary/60 hover:text-primary transition-colors disabled:opacity-50"
+              disabled={quantity <= 1 || isUpdating}
+              aria-label="Decrease quantity"
+            >
+              <FiMinus className="w-3 h-3" />
+            </button>
+            <span
+              className="text-sm font-medium w-6 text-center"
+              aria-live="polite"
+            >
+              {quantity}
+            </span>
+            <button
+              onClick={() => onUpdate(product._id, quantity + 1, quantity)}
+              className="flex-1 flex items-center justify-center py-2 text-primary/60 hover:text-primary transition-colors disabled:opacity-50"
+              disabled={quantity >= (product.stock || Infinity) || isUpdating}
+              aria-label="Increase quantity"
+            >
+              <FiPlus className="w-3 h-3" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+});
+CartItemCard.displayName = "CartItemCard";
 
 export default function CartSection() {
-  const [cartItems, setCartItems] = useState(INITIAL_CART);
+  const [cartItems, setCartItems] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Handlers
-  const updateQuantity = (id, newQuantity) => {
-    if (newQuantity < 1) return;
-    setCartItems((items) =>
-      items.map((item) =>
-        item._id === id ?
-          { ...item, quantity: Math.min(newQuantity, item.stock) }
-        : item,
-      ),
+  // Shipping zone state (insideDhaka or outsideDhaka)
+  const [shippingZone, setShippingZone] = useState("insideDhaka");
+
+  // Track individual item loading states for optimistic updates
+  const [updatingItems, setUpdatingItems] = useState(new Set());
+
+  const fetchCart = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const { data } = await cartService.getCart();
+      setCartItems(data?.data?.items || []);
+    } catch (err) {
+      const msg = err?.response?.data?.message || "Failed to load cart.";
+      setError(msg);
+      toast.error(msg);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchCart();
+  }, [fetchCart]);
+
+  // Optimistic UI Update: Fast quantity mapping without full refetch
+  const updateQuantity = useCallback(
+    async ({ productId, color, size }, newQuantity, currentQuantity) => {
+      if (newQuantity < 1) return;
+
+      setCartItems((prev) =>
+        prev.map((item) =>
+          item?.product?._id === productId ?
+            { ...item, quantity: newQuantity }
+          : item,
+        ),
+      );
+      setUpdatingItems((prev) => new Set(prev).add(productId));
+
+      try {
+        await cartService.updateCart({
+          productId,
+          color,
+          size,
+          quantity: newQuantity,
+        });
+        // Success: No need to refetch, UI is already updated
+      } catch (err) {
+        // Revert to old quantity on error
+        setCartItems((prev) =>
+          prev.map((item) =>
+            item?.product?._id === productId ?
+              { ...item, quantity: currentQuantity }
+            : item,
+          ),
+        );
+        toast.error(
+          err?.response?.data?.message || "Failed to update quantity.",
+        );
+      } finally {
+        setUpdatingItems((prev) => {
+          const newSet = new Set(prev);
+          newSet.delete(productId);
+          return newSet;
+        });
+      }
+    },
+    [],
+  );
+
+  // Optimistic UI Remove
+  const removeItem = useCallback(
+    async ({ productId, color, size }) => {
+      const previousItems = [...cartItems];
+
+      setCartItems((prev) =>
+        prev.filter(
+          (item) =>
+            !(
+              item.product._id === productId &&
+              item.color === color &&
+              item.size === size
+            ),
+        ),
+      );
+      setUpdatingItems((prev) => new Set(prev).add(productId));
+
+      try {
+        await cartService.removeItem({
+          productId,
+          color,
+          size,
+        });
+        toast.success("Item removed from cart");
+      } catch (err) {
+        setCartItems(previousItems); // Revert
+        toast.error(err?.response?.data?.message || "Failed to remove item.");
+      } finally {
+        setUpdatingItems((prev) => {
+          const newSet = new Set(prev);
+          newSet.delete(productId);
+          return newSet;
+        });
+      }
+    },
+    [cartItems],
+  );
+
+  // Memoized Calculations
+  const { subtotal, shippingCost, total } = useMemo(() => {
+    const sub = cartItems.reduce((acc, item) => {
+      const price = item?.product?.price || 0;
+      const discount = item?.product?.discount || 0;
+      const finalPrice = price * (1 - discount / 100);
+      return acc + finalPrice * (item?.quantity || 1);
+    }, 0);
+
+    // Shipping cost logic based on selected zone (Free if cart is empty)
+    const shipping =
+      sub === 0 ? 0
+      : shippingZone === "insideDhaka" ? 80
+      : 130;
+    const tot = sub + shipping;
+
+    return { subtotal: sub, shippingCost: shipping, total: tot };
+  }, [cartItems, shippingZone]);
+
+  // ================= State Returns ================= //
+
+  if (error) {
+    return (
+      <section className="bg-secondary text-primary py-20 lg:py-32 min-h-[70vh] flex items-center justify-center">
+        <div className="text-center">
+          <FiAlertCircle className="w-12 h-12 mx-auto text-primary/40 mb-4" />
+          <h1 className="text-3xl font-bold tracking-tight mb-4">
+            Something went wrong.
+          </h1>
+          <p className="text-primary/60 font-light mb-8">{error}</p>
+          <button
+            onClick={fetchCart}
+            className="inline-flex items-center justify-center gap-2 bg-accent font-semibold text-white text-sm px-8 py-3.5 rounded-md hover:bg-primary/90 transition-all shadow-sm group"
+          >
+            <FiRefreshCw className="w-4 h-4 group-hover:rotate-180 transition-transform duration-500" />
+            Try Again
+          </button>
+        </div>
+      </section>
     );
-  };
+  }
 
-  const removeItem = (id) => {
-    setCartItems((items) => items.filter((item) => item._id !== id));
-  };
-
-  // Calculations
-  const subtotal = cartItems.reduce((acc, item) => {
-    const finalPrice = item.price * (1 - (item.discount || 0) / 100);
-    return acc + finalPrice * item.quantity;
-  }, 0);
-
-  const shipping = subtotal > 200 ? 0 : 15; // Free shipping over $200
-  const tax = subtotal * 0.08; // 8% tax rate estimation
-  const total = subtotal + shipping + tax;
+  if (isLoading) {
+    return (
+      <section className="bg-secondary text-primary py-12 lg:py-24 min-h-screen">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="mb-12 border-b border-primary/10 pb-6">
+            <div className="h-3 w-32 bg-primary/10 rounded mb-4 animate-pulse"></div>
+            <div className="h-10 w-64 bg-primary/10 rounded animate-pulse"></div>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start">
+            <div className="lg:col-span-7 xl:col-span-8 space-y-6">
+              {[1, 2].map((i) => (
+                <div
+                  key={i}
+                  className="bg-white p-4 sm:p-6 rounded-lg border border-primary/5 shadow-xs flex flex-col sm:flex-row gap-6 animate-pulse"
+                >
+                  <div className="w-24 h-32 sm:w-32 sm:h-40 bg-primary/5 rounded-md"></div>
+                  <div className="flex flex-col flex-1 justify-between py-2">
+                    <div className="space-y-3">
+                      <div className="h-5 w-3/4 bg-primary/5 rounded"></div>
+                      <div className="h-4 w-1/4 bg-primary/5 rounded"></div>
+                      <div className="h-4 w-1/2 bg-primary/5 rounded mt-4"></div>
+                    </div>
+                    <div className="h-8 w-24 bg-primary/5 rounded mt-6"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="lg:col-span-5 xl:col-span-4 sticky top-6">
+              <div className="bg-white p-6 sm:p-8 rounded-lg border border-primary/10 shadow-sm animate-pulse">
+                <div className="h-6 w-1/3 bg-primary/10 rounded mb-6"></div>
+                <div className="space-y-4 mb-6 pb-6 border-b border-primary/10">
+                  <div className="flex justify-between">
+                    <div className="h-4 w-1/4 bg-primary/5 rounded"></div>
+                    <div className="h-4 w-1/4 bg-primary/5 rounded"></div>
+                  </div>
+                  <div className="flex justify-between">
+                    <div className="h-4 w-1/4 bg-primary/5 rounded"></div>
+                    <div className="h-4 w-1/4 bg-primary/5 rounded"></div>
+                  </div>
+                </div>
+                <div className="flex justify-between mb-8">
+                  <div className="h-6 w-1/4 bg-primary/10 rounded"></div>
+                  <div className="h-6 w-1/4 bg-primary/10 rounded"></div>
+                </div>
+                <div className="h-14 w-full bg-primary/10 rounded-md mb-4"></div>
+                <div className="h-3 w-1/2 mx-auto bg-primary/5 rounded"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   if (cartItems.length === 0) {
     return (
@@ -76,7 +384,7 @@ export default function CartSection() {
           </p>
           <Link
             href="/products"
-            className="inline-flex items-center justify-center gap-2 bg-primary text-white text-sm font-medium px-8 py-3.5 rounded-md hover:bg-primary/90 transition-all shadow-sm group"
+            className="inline-flex items-center justify-center gap-2 bg-accent font-semibold text-white text-sm px-8 py-3.5 rounded-md hover:bg-primary/90 transition-all shadow-sm group"
           >
             Continue Shopping
             <FiArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
@@ -102,113 +410,15 @@ export default function CartSection() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start">
           {/* Left Column: Cart Items */}
           <div className="lg:col-span-7 xl:col-span-8 space-y-6">
-            {cartItems.map((item) => {
-              const itemFinalPrice =
-                item.price * (1 - (item.discount || 0) / 100);
-
-              return (
-                <div
-                  key={item._id}
-                  className="bg-white p-4 sm:p-6 rounded-lg border border-primary/5 shadow-xs flex flex-col sm:flex-row gap-6 relative"
-                >
-                  {/* Remove Button (Mobile: Top Right, Desktop: Absolute Right) */}
-                  <button
-                    onClick={() => removeItem(item._id)}
-                    className="absolute top-4 right-4 sm:top-6 sm:right-6 text-primary/40 hover:text-accent transition-colors"
-                    aria-label="Remove item"
-                  >
-                    <FiX className="w-5 h-5" />
-                  </button>
-
-                  {/* Image */}
-                  <Link
-                    href={`/products/${item.slug}`}
-                    className="block flex-shrink-0 w-24 h-32 sm:w-32 sm:h-40 bg-secondary rounded-md relative overflow-hidden"
-                  >
-                    <Image
-                      src={item.image}
-                      alt={item.title}
-                      fill
-                      className="object-cover hover:scale-105 transition-transform duration-500"
-                    />
-                  </Link>
-
-                  {/* Details */}
-                  <div className="flex flex-col flex-1 justify-between">
-                    <div className="pr-8">
-                      <Link href={`/products/${item.slug}`}>
-                        <h3 className="text-base font-semibold hover:text-accent transition-colors line-clamp-1 mb-1">
-                          {item.title}
-                        </h3>
-                      </Link>
-
-                      {/* Price Block */}
-                      <div className="flex items-baseline gap-2 mb-4">
-                        <span className="text-sm font-bold">
-                          ${itemFinalPrice.toFixed(2)}
-                        </span>
-                        {item.discount > 0 && (
-                          <span className="text-xs text-primary/40 line-through">
-                            ${item.price.toFixed(2)}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Size & Color Variations */}
-                      <div className="flex flex-wrap items-center gap-4 text-xs text-primary/70 font-light mb-6">
-                        <p>
-                          <span className="font-medium text-primary">
-                            Size:
-                          </span>{" "}
-                          {item.selectedSize}
-                        </p>
-                        <div className="w-px h-3 bg-primary/20 hidden sm:block"></div>
-                        <p className="flex items-center gap-1.5">
-                          <span className="font-medium text-primary">
-                            Color:
-                          </span>
-                          <span
-                            className="w-3 h-3 rounded-full border border-primary/20 inline-block"
-                            style={{ backgroundColor: item.selectedColor.hex }}
-                          />
-                          {item.selectedColor.name}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Quantity Selector */}
-                    <div className="flex items-center gap-4">
-                      <span className="text-xs font-semibold uppercase tracking-wider text-primary/50">
-                        Qty
-                      </span>
-                      <div className="flex items-center bg-secondary rounded-md border border-primary/10 w-24">
-                        <button
-                          onClick={() =>
-                            updateQuantity(item._id, item.quantity - 1)
-                          }
-                          className="flex-1 flex items-center justify-center py-2 text-primary/60 hover:text-primary transition-colors disabled:opacity-50"
-                          disabled={item.quantity <= 1}
-                        >
-                          <FiMinus className="w-3 h-3" />
-                        </button>
-                        <span className="text-sm font-medium w-6 text-center">
-                          {item.quantity}
-                        </span>
-                        <button
-                          onClick={() =>
-                            updateQuantity(item._id, item.quantity + 1)
-                          }
-                          className="flex-1 flex items-center justify-center py-2 text-primary/60 hover:text-primary transition-colors disabled:opacity-50"
-                          disabled={item.quantity >= item.stock}
-                        >
-                          <FiPlus className="w-3 h-3" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+            {cartItems.map((item) => (
+              <CartItemCard
+                key={item?._id}
+                item={item}
+                isUpdating={updatingItems.has(item?.product?._id)}
+                onUpdate={updateQuantity}
+                onRemove={removeItem}
+              />
+            ))}
           </div>
 
           {/* Right Column: Order Summary */}
@@ -223,18 +433,48 @@ export default function CartSection() {
                     ${subtotal.toFixed(2)}
                   </span>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span>Shipping</span>
-                  <span className="font-medium text-primary">
-                    {shipping === 0 ?
-                      "Complimentary"
-                    : `$${shipping.toFixed(2)}`}
+
+                {/* Shipping Location Options */}
+                <div className="space-y-2 pt-1">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-primary/60 block mb-2">
+                    Shipping Option
                   </span>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setShippingZone("insideDhaka")}
+                      className={`py-2 px-3 text-xs font-medium rounded-md border text-center transition-all ${
+                        shippingZone === "insideDhaka" ?
+                          "border-accent bg-accent/5 text-accent font-semibold"
+                        : "border-primary/10 hover:border-primary/30 text-primary/70"
+                      }`}
+                    >
+                      Inside Dhaka
+                      <span className="block text-[16px] font-bold ">
+                        $80.00
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShippingZone("outsideDhaka")}
+                      className={`py-2 px-3 text-xs font-medium rounded-md border text-center transition-all ${
+                        shippingZone === "outsideDhaka" ?
+                          "border-accent bg-accent/5 text-accent font-semibold"
+                        : "border-primary/10 hover:border-primary/30 text-primary/70"
+                      }`}
+                    >
+                      Outside Dhaka
+                      <span className="block text-[16px] font-bold">
+                        $130.00
+                      </span>
+                    </button>
+                  </div>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span>Estimated Tax</span>
+
+                <div className="flex justify-between items-center pt-2">
+                  <span>Shipping Cost</span>
                   <span className="font-medium text-primary">
-                    ${tax.toFixed(2)}
+                    ${shippingCost.toFixed(2)}
                   </span>
                 </div>
               </div>
@@ -244,15 +484,10 @@ export default function CartSection() {
                 <span className="text-xl font-bold">${total.toFixed(2)}</span>
               </div>
 
-              <button className="w-full bg-accent text-white text-sm font-bold px-8 py-4 rounded-md hover:bg-primary/90 transition-all shadow-sm flex items-center justify-center gap-2 group mb-4">
-                Order
+              <button className="w-full bg-accent text-white text-sm font-bold px-8 py-4 rounded-md hover:bg-primary/90 transition-all shadow-sm flex items-center justify-center gap-2 group mb-4 cursor-pointer">
+                Order Now
                 <FiArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </button>
-
-              <div className="flex items-center justify-center gap-2 text-xs text-primary/50">
-                <FiLock className="w-3 h-3" />
-                <span>Secure SSL Encrypted Checkout</span>
-              </div>
             </div>
 
             {/* Optional Promotional Block */}

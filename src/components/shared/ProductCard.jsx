@@ -30,7 +30,7 @@ const ProductCard = ({ product, finalPrice }) => {
         </button>
 
         <Link
-          href={`/product/${product.slug}`}
+          href={`/products/${product._id}`}
           className="absolute inset-0 z-10"
         >
           <Image
@@ -46,7 +46,7 @@ const ProductCard = ({ product, finalPrice }) => {
         <div className="absolute bottom-0 left-0 w-full p-4 z-20 transform translate-y-full opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 ease-out">
           <button
             disabled={product.stock === 0}
-            className="w-full bg-primary/90 backdrop-blur-md hover:bg-primary text-white text-sm font-semibold uppercase tracking-wider py-3.5 rounded-sm flex items-center justify-center gap-2 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+            className="w-full bg-accent/90 cursor-pointer backdrop-blur-md hover:bg-primary text-white text-sm font-semibold uppercase tracking-wider py-3.5 rounded-sm flex items-center justify-center gap-2 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
             <FiShoppingCart className="w-4 h-4" />
             {product.stock === 0 ? "Out of Stock" : "Add to Cart"}
@@ -74,7 +74,7 @@ const ProductCard = ({ product, finalPrice }) => {
 
         {/* Title */}
         <Link
-          href={`/product/${product.slug}`}
+          href={`/products/${product._id}`}
           className="group-hover:text-accent transition-colors"
         >
           <h3 className="text-base font-bold text-primary truncate mb-1">

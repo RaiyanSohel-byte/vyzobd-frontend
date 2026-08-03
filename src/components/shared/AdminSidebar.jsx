@@ -14,7 +14,7 @@ import {
 } from "react-icons/fi";
 
 const NAV_LINKS = [
-  { name: "Dashboard", href: "/admin/dashboard", icon: FiHome },
+  { name: "Dashboard", href: "/admin", icon: FiHome },
   { name: "Orders", href: "/admin/orders", icon: FiShoppingBag },
   { name: "Products", href: "/admin/products", icon: FiLayers },
   { name: "Users", href: "/admin/users", icon: FiUsers },
