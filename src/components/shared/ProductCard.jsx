@@ -40,7 +40,7 @@ const ProductCard = ({ product, finalPrice }) => {
         {/* Category & Rating */}
         <div className="flex justify-between items-center mb-1.5">
           <span className="text-xs text-primary/60 font-medium uppercase tracking-wider">
-            {product.category}
+            {product.category?.name || product.category}
           </span>
           <div className="flex items-center gap-1">
             <FiStar className="w-3.5 h-3.5 text-accent fill-accent" />

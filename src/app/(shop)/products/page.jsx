@@ -14,12 +14,12 @@ export default function ProductsPage() {
   const [categories, setCategories] = useState(["All"]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-
+  const [maxPrice, setMaxPrice] = useState(1000);
   // Filter state management
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
 
-  const [priceRange, setPriceRange] = useState([0, 100000]);
+  const [priceRange, setPriceRange] = useState([0, maxPrice]);
   const [inStockOnly, setInStockOnly] = useState(false);
   const [sortBy, setSortBy] = useState("featured");
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
@@ -37,8 +37,13 @@ export default function ProductsPage() {
         // Handle products data structure
         const productList = productsRes?.data || productsRes || [];
         setProducts(productList);
-        console.log(productList);
-        console.log(productList.length);
+        const highestPrice = Math.max(
+          ...productList.map((product) => product.price),
+          0,
+        );
+
+        setMaxPrice(highestPrice);
+        setPriceRange([0, highestPrice]);
         // Handle categories data structure (supporting string arrays or object arrays with name/title)
         const categoryList = categoriesRes?.data || categoriesRes || [];
         const formattedCategories = categoryList.map((cat) =>
@@ -63,7 +68,7 @@ export default function ProductsPage() {
     setSearchQuery("");
     setSelectedCategory("All");
 
-    setPriceRange([0, 100000]);
+    setPriceRange([0, maxPrice]);
     setInStockOnly(false);
     setSortBy("featured");
   };
@@ -82,18 +87,24 @@ export default function ProductsPage() {
         ) {
           return false;
         }
+
         // Category
-        if (
-          selectedCategory !== "All" &&
-          product.category !== selectedCategory
-        ) {
+        const categoryName =
+          typeof product.category === "string" ?
+            product.category
+          : product.category?.name;
+
+        if (selectedCategory !== "All" && categoryName !== selectedCategory) {
           return false;
         }
+
         // Price
         const finalPrice = product.price * (1 - (product.discount || 0) / 100);
+
         if (finalPrice < priceRange[0] || finalPrice > priceRange[1]) {
           return false;
         }
+
         // Stock
         if (inStockOnly && product.stock <= 0) {
           return false;
@@ -228,7 +239,7 @@ export default function ProductsPage() {
             {(priceRange[0] > 0 || priceRange[1] < 500) && (
               <FilterTag
                 label={`Price: $${priceRange[0]} - $${priceRange[1]}`}
-                onRemove={() => setPriceRange([0, 100000])}
+                onRemove={() => setPriceRange([0, maxPrice])}
               />
             )}
             <button
@@ -250,6 +261,7 @@ export default function ProductsPage() {
               setSelectedCategory={setSelectedCategory}
               priceRange={priceRange}
               setPriceRange={setPriceRange}
+              maxPrice={maxPrice}
               inStockOnly={inStockOnly}
               setInStockOnly={setInStockOnly}
               clearAllFilters={clearAllFilters}
@@ -357,9 +369,9 @@ function SidebarContent({
   categories,
   selectedCategory,
   setSelectedCategory,
-
   priceRange,
   setPriceRange,
+  maxPrice,
   inStockOnly,
   setInStockOnly,
   clearAllFilters,
@@ -416,7 +428,7 @@ function SidebarContent({
         <input
           type="range"
           min="0"
-          max="100000"
+          max={maxPrice}
           step="10"
           value={priceRange[1]}
           onChange={(e) =>
@@ -499,7 +511,7 @@ function ProductCard({ product }) {
         <div>
           <div className="flex items-center justify-between text-xs text-primary/50 mb-1">
             <span className="uppercase tracking-widest text-[10px]">
-              {product.category}
+              {product.category?.name || product.category}
             </span>
             <div className="flex items-center gap-1 text-amber-500">
               <FiStar className="w-3 h-3 fill-amber-500" />

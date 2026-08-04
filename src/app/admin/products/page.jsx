@@ -15,7 +15,9 @@ import {
 } from "react-icons/fi";
 import { toast } from "react-hot-toast";
 import { productService } from "@/services/product.service";
+// Assume this exists
 import { exportProductsToCSV } from "@/utils/exportProductsToCSV";
+import { categoryService } from "@/services/category.service";
 
 const initialFormState = {
   title: "",
@@ -23,7 +25,7 @@ const initialFormState = {
   description: "",
   price: "",
   discount: 0,
-  category: "",
+  category: "", // This will now store the Category ObjectId
   images: "",
   stock: 0,
   isFeatured: false,
@@ -31,38 +33,50 @@ const initialFormState = {
 
 export default function ProductsPage() {
   const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("All");
 
-  // Delete Modal State
+  // Modals State
   const [deleteModal, setDeleteModal] = useState({
     isOpen: false,
     productId: null,
   });
 
-  // Product Add/Edit Modal State
   const [productModal, setProductModal] = useState({
     isOpen: false,
     mode: "add", // 'add' | 'edit'
     productId: null,
   });
 
+  const [categoryModal, setCategoryModal] = useState({
+    isOpen: false,
+    name: "",
+    isSubmitting: false,
+  });
+
   const [formData, setFormData] = useState(initialFormState);
 
-  // Fetch Products
+  // Fetch Products & Categories
   useEffect(() => {
-    fetchProducts();
+    fetchData();
   }, []);
 
-  const fetchProducts = async () => {
+  const fetchData = async () => {
     try {
-      const { data } = await productService.getProducts();
-      setProducts(data.data || data);
+      setLoading(true);
+      const [productsRes, categoriesRes] = await Promise.all([
+        productService.getProducts(),
+        categoryService.getCategories(),
+      ]);
+
+      setProducts(productsRes.data.data || productsRes.data);
+      setCategories(categoriesRes.data.data || categoriesRes.data);
     } catch (error) {
       console.error(error);
-      toast.error("Failed to load products");
+      toast.error("Failed to load inventory data");
     } finally {
       setLoading(false);
     }
@@ -79,18 +93,14 @@ export default function ProductsPage() {
         .includes(searchQuery.toLowerCase());
       const matchesSearch = titleMatch || idMatch;
 
+      // Handle both populated category object or raw ObjectId
+      const productCategoryId = product.category?._id || product.category;
       const matchesCategory =
-        categoryFilter === "All" || product.category === categoryFilter;
+        categoryFilter === "All" || productCategoryId === categoryFilter;
 
       return matchesSearch && matchesCategory;
     });
   }, [products, searchQuery, categoryFilter]);
-
-  // Dynamic Categories from MongoDB data
-  const categories = [
-    "All",
-    ...new Set(products.map((product) => product.category).filter(Boolean)),
-  ];
 
   // Helper for Stock Status Badges
   const getStockStyle = (stock) => {
@@ -133,6 +143,29 @@ export default function ProductsPage() {
     }
   };
 
+  // Category Modal Handlers
+  const handleCreateCategory = async (e) => {
+    e.preventDefault();
+    setCategoryModal((prev) => ({ ...prev, isSubmitting: true }));
+
+    try {
+      const { data } = await categoryService.createCategory({
+        name: categoryModal.name.trim(),
+      });
+      const newCategory = data.data || data;
+
+      setCategories((prev) => [...prev, newCategory]);
+      // Auto-select the newly created category in the product form
+      setFormData((prev) => ({ ...prev, category: newCategory._id }));
+      setCategoryModal({ isOpen: false, name: "", isSubmitting: false });
+      toast.success("Category created successfully");
+    } catch (error) {
+      console.error(error);
+      toast.error(error.response?.data?.message || "Failed to create category");
+      setCategoryModal((prev) => ({ ...prev, isSubmitting: false }));
+    }
+  };
+
   // Product Modal Handlers
   const openAddModal = () => {
     setFormData(initialFormState);
@@ -146,7 +179,7 @@ export default function ProductsPage() {
       description: product.description || "",
       price: product.price ?? "",
       discount: product.discount ?? 0,
-      category: product.category || "",
+      category: product.category?._id || product.category || "", // Use ObjectId
       images: Array.isArray(product.images) ? product.images.join("\n") : "",
       stock: product.stock ?? 0,
       isFeatured: Boolean(product.isFeatured),
@@ -195,7 +228,7 @@ export default function ProductsPage() {
       description: formData.description.trim(),
       price: Number(formData.price),
       discount: Number(formData.discount) || 0,
-      category: formData.category.trim(),
+      category: formData.category, // Now sending ObjectId
       images: formData.images
         .split("\n")
         .map((url) => url.trim())
@@ -208,6 +241,15 @@ export default function ProductsPage() {
       if (productModal.mode === "add") {
         const { data } = await productService.createProduct(payload);
         const createdProduct = data.data || data;
+
+        // If API doesn't populate category on creation, manually populate it for UI state
+        if (typeof createdProduct.category === "string") {
+          const catObj = categories.find(
+            (c) => c._id === createdProduct.category,
+          );
+          if (catObj) createdProduct.category = catObj;
+        }
+
         setProducts((prev) => [createdProduct, ...prev]);
         toast.success("Product created successfully");
       } else {
@@ -216,6 +258,15 @@ export default function ProductsPage() {
           payload,
         );
         const updatedProduct = data.data || data;
+
+        // Manually populate category for UI state if needed
+        if (typeof updatedProduct.category === "string") {
+          const catObj = categories.find(
+            (c) => c._id === updatedProduct.category,
+          );
+          if (catObj) updatedProduct.category = catObj;
+        }
+
         setProducts((prev) =>
           prev.map((p) =>
             p._id === productModal.productId ? { ...p, ...updatedProduct } : p,
@@ -246,7 +297,7 @@ export default function ProductsPage() {
     return (
       <div className="bg-secondary min-h-screen text-primary p-4 sm:p-6 lg:p-8 flex items-center justify-center">
         <div className="animate-pulse font-medium tracking-widest uppercase text-primary/50 text-sm">
-          Loading products...
+          Loading inventory...
         </div>
       </div>
     );
@@ -308,9 +359,10 @@ export default function ProductsPage() {
               onChange={(e) => setCategoryFilter(e.target.value)}
               className="w-full sm:w-auto bg-secondary text-primary text-sm px-4 py-2.5 rounded-md border border-primary/10 focus:outline-none focus:border-accent shadow-sm cursor-pointer"
             >
-              {categories.map((category) => (
-                <option key={category} value={category}>
-                  {category}
+              <option value="All">All Categories</option>
+              {categories.map((cat) => (
+                <option key={cat._id} value={cat._id}>
+                  {cat.name}
                 </option>
               ))}
             </select>
@@ -377,7 +429,9 @@ export default function ProductsPage() {
 
                         {/* Category */}
                         <td className="px-6 py-4 text-primary/70">
-                          {product.category}
+                          {product.category?.name ||
+                            product.category ||
+                            "Uncategorized"}
                         </td>
 
                         {/* Pricing */}
@@ -457,31 +511,12 @@ export default function ProductsPage() {
               </tbody>
             </table>
           </div>
-
-          {/* Pagination Footer */}
-          <div className="p-4 border-t border-primary/10 flex items-center justify-between text-xs text-primary/60">
-            <span>Showing {filteredProducts.length} products</span>
-            <div className="flex items-center gap-2">
-              <button
-                className="px-3 py-1.5 border border-primary/10 rounded-md hover:bg-secondary transition-colors disabled:opacity-50"
-                disabled
-              >
-                Previous
-              </button>
-              <button
-                className="px-3 py-1.5 border border-primary/10 rounded-md hover:bg-secondary transition-colors disabled:opacity-50"
-                disabled
-              >
-                Next
-              </button>
-            </div>
-          </div>
         </div>
       </div>
 
       {/* Add / Edit Product Modal */}
       {productModal.isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm overflow-y-auto">
+        <div className="fixed inset-0 z-40 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm overflow-y-auto">
           <div className="bg-white rounded-xl shadow-xl border border-primary/10 max-w-2xl w-full my-8 p-6 animate-in fade-in zoom-in duration-200">
             <div className="flex items-center justify-between border-b border-primary/10 pb-4">
               <h3 className="text-lg font-semibold text-primary">
@@ -566,20 +601,43 @@ export default function ProductsPage() {
                   />
                 </div>
 
-                {/* Category */}
+                {/* Category (Select + Add New) */}
                 <div>
                   <label className="block text-xs font-semibold text-primary/70 mb-1">
                     Category *
                   </label>
-                  <input
-                    type="text"
-                    name="category"
-                    required
-                    value={formData.category}
-                    onChange={handleInputChange}
-                    placeholder="e.g. Fruits, Vegetables"
-                    className="w-full bg-secondary text-primary text-sm px-3 py-2 rounded-md border border-primary/10 focus:outline-none focus:border-accent"
-                  />
+                  <div className="flex gap-2">
+                    <select
+                      name="category"
+                      required
+                      value={formData.category}
+                      onChange={handleInputChange}
+                      className="w-full bg-secondary text-primary text-sm px-3 py-2 rounded-md border border-primary/10 focus:outline-none focus:border-accent"
+                    >
+                      <option value="" disabled>
+                        Select a category
+                      </option>
+                      {categories.map((cat) => (
+                        <option key={cat._id} value={cat._id}>
+                          {cat.name}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setCategoryModal({
+                          isOpen: true,
+                          name: "",
+                          isSubmitting: false,
+                        })
+                      }
+                      className="px-3 py-2 bg-primary/5 text-primary border border-primary/10 hover:bg-primary/10 rounded-md text-sm font-medium transition-colors whitespace-nowrap shadow-sm flex items-center gap-1"
+                    >
+                      <FiPlus className="w-3.5 h-3.5" />
+                      New
+                    </button>
+                  </div>
                 </div>
 
                 {/* Stock */}
@@ -668,6 +726,58 @@ export default function ProductsPage() {
                   : productModal.mode === "add" ?
                     "Create Product"
                   : "Save Changes"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Quick Add Category Modal (Z-Index higher than Product Modal) */}
+      {categoryModal.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-xl shadow-xl border border-primary/10 max-w-sm w-full p-6 animate-in fade-in zoom-in duration-200">
+            <h3 className="text-lg font-semibold text-primary mb-4">
+              Add New Category
+            </h3>
+            <form onSubmit={handleCreateCategory}>
+              <div className="mb-6">
+                <label className="block text-xs font-semibold text-primary/70 mb-1">
+                  Category Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  autoFocus
+                  value={categoryModal.name}
+                  onChange={(e) =>
+                    setCategoryModal({ ...categoryModal, name: e.target.value })
+                  }
+                  placeholder="e.g. Dairy Products"
+                  className="w-full bg-secondary text-primary text-sm px-3 py-2 rounded-md border border-primary/10 focus:outline-none focus:border-accent"
+                />
+              </div>
+              <div className="flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setCategoryModal({
+                      isOpen: false,
+                      name: "",
+                      isSubmitting: false,
+                    })
+                  }
+                  disabled={categoryModal.isSubmitting}
+                  className="px-4 py-2 text-sm font-medium text-primary bg-secondary border border-primary/10 hover:bg-secondary/70 rounded-md transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={categoryModal.isSubmitting}
+                  className="px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-primary/90 disabled:opacity-50 rounded-md transition-colors shadow-sm"
+                >
+                  {categoryModal.isSubmitting ? "Saving..." : "Create"}
                 </button>
               </div>
             </form>

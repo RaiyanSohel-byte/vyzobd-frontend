@@ -181,7 +181,7 @@ export default function AdminDashboard() {
                         },
                       );
                       const amount = (order.total || 0).toFixed(2);
-                      const status = order.status || "Pending";
+                      const status = order.orderStatus || "Pending";
 
                       return (
                         <tr

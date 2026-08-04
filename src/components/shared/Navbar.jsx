@@ -33,7 +33,7 @@ export default function Navbar() {
   const router = useRouter();
   const { cartCount } = useCart();
   // Consume the real user state and logout function from AuthContext
-  const { user, logout } = useAuth();
+  const { user, logout, isAdmin } = useAuth();
 
   // Close menus when the route changes
   useEffect(() => {
@@ -98,7 +98,7 @@ export default function Navbar() {
           </div>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex space-x-8">
+          <div className="hidden md:flex space-x-8 items-center">
             {NAV_LINKS.map((item) => {
               const isActive = pathname === item.href;
               return (
@@ -113,6 +113,14 @@ export default function Navbar() {
                 </Link>
               );
             })}
+            {isAdmin && (
+              <Link
+                href={"/admin"}
+                className="text-sm font-semibold tracking-wide uppercase transition-colors duration-300 text-primary hover:text-accent"
+              >
+                Admin Dashboard
+              </Link>
+            )}
           </div>
 
           {/* Icons / Actions */}
@@ -233,6 +241,14 @@ export default function Navbar() {
                 >
                   Profile
                 </Link>
+                {isAdmin && (
+                  <Link
+                    href="/admin"
+                    className="block px-6 py-5 text-sm font-semibold tracking-widest uppercase text-primary border-b border-primary/5 hover:bg-primary/10 transition-colors"
+                  >
+                    Admin Dashboard
+                  </Link>
+                )}
                 <Link
                   href="/orders"
                   className="block px-6 py-5 text-sm font-semibold tracking-widest uppercase text-primary border-b border-primary/5 hover:bg-primary/10 transition-colors"

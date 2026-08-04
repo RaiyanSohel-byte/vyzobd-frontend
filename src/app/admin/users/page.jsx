@@ -272,6 +272,9 @@ export default function UsersPage() {
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-2">
                           <button
+                            onClick={() =>
+                              (window.location.href = `mailto:${user.email}`)
+                            }
                             className="p-2 text-primary/50 hover:text-primary hover:bg-secondary rounded-md transition-colors"
                             title="Email User"
                           >
