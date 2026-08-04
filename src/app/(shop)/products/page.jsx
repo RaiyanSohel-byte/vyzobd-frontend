@@ -403,9 +403,9 @@ function SidebarContent({
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
-              className={`w-full text-left text-sm py-1.5 px-3 rounded-md transition-colors ${
+              className={`cursor-pointer w-full text-left text-sm py-1.5 px-3 rounded-md transition-colors ${
                 selectedCategory === cat ?
-                  "bg-primary text-white font-medium"
+                  "bg-accent text-white font-semibold"
                 : "text-primary/70 hover:bg-secondary"
               }`}
             >
