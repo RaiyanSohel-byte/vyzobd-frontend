@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   FiSearch,
   FiFilter,
@@ -8,83 +8,74 @@ import {
   FiTrash2,
   FiUserPlus,
   FiMail,
-  FiShield,
 } from "react-icons/fi";
-
-// --- Mock Data (Standard E-commerce User Schema) ---
-const MOCK_USERS = [
-  {
-    _id: "USR-001",
-    name: "Elena Rostova",
-    email: "elena@example.com",
-    role: "Customer",
-    status: "Active",
-    ordersCount: 4,
-    totalSpent: 1250.0,
-    createdAt: "2025-11-12T10:30:00Z",
-  },
-  {
-    _id: "USR-002",
-    name: "System Administrator",
-    email: "admin@store.com",
-    role: "Admin",
-    status: "Active",
-    ordersCount: 0,
-    totalSpent: 0.0,
-    createdAt: "2025-01-01T00:00:00Z",
-  },
-  {
-    _id: "USR-003",
-    name: "Marcus Chen",
-    email: "marcus@example.com",
-    role: "Customer",
-    status: "Active",
-    ordersCount: 1,
-    totalSpent: 110.0,
-    createdAt: "2026-08-01T09:00:00Z",
-  },
-  {
-    _id: "USR-004",
-    name: "Sarah Jenkins",
-    email: "sarah@example.com",
-    role: "Customer",
-    status: "Inactive",
-    ordersCount: 2,
-    totalSpent: 185.0,
-    createdAt: "2026-02-15T14:20:00Z",
-  },
-  {
-    _id: "USR-005",
-    name: "David Miller",
-    email: "david@example.com",
-    role: "Customer",
-    status: "Suspended",
-    ordersCount: 3,
-    totalSpent: 420.0,
-    createdAt: "2026-03-22T11:05:00Z",
-  },
-];
+import { toast } from "react-hot-toast";
+import { adminUserService } from "@/services/adminUser.service";
 
 export default function UsersPage() {
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("All");
   const [statusFilter, setStatusFilter] = useState("All");
 
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      const { data } = await adminUserService.getUsers();
+      setUsers(data.users);
+    } catch (error) {
+      console.log(error);
+      toast.error("Failed to load users");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRoleChange = async (id, role) => {
+    try {
+      await adminUserService.updateRole(id, role);
+      setUsers((prev) =>
+        prev.map((user) => (user._id === id ? { ...user, role } : user)),
+      );
+      toast.success("Role updated");
+    } catch (error) {
+      toast.error("Update failed");
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm("Delete this user?")) return;
+
+    try {
+      await adminUserService.deleteUser(id);
+      setUsers((prev) => prev.filter((u) => u._id !== id));
+      toast.success("User deleted");
+    } catch (error) {
+      toast.error("Delete failed");
+    }
+  };
+
   // Filter Logic
   const filteredUsers = useMemo(() => {
-    return MOCK_USERS.filter((user) => {
+    return users.filter((user) => {
       const matchesSearch =
-        user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user._id.toLowerCase().includes(searchQuery.toLowerCase());
+        user.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        user.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        user._id?.toLowerCase().includes(searchQuery.toLowerCase());
 
       const matchesRole = roleFilter === "All" || user.role === roleFilter;
-      const matchesStatus =
-        statusFilter === "All" || user.status === statusFilter;
+
+      const status = user.isVerified ? "Active" : "Inactive";
+      const matchesStatus = statusFilter === "All" || status === statusFilter;
 
       return matchesSearch && matchesRole && matchesStatus;
     });
-  }, [searchQuery, roleFilter, statusFilter]);
+  }, [users, searchQuery, roleFilter, statusFilter]);
 
   // Helper for Status Badges
   const getStatusStyle = (status) => {
@@ -93,8 +84,6 @@ export default function UsersPage() {
         return "text-emerald-600 bg-emerald-50 border border-emerald-200";
       case "Inactive":
         return "text-amber-600 bg-amber-50 border border-amber-200";
-      case "Suspended":
-        return "text-accent bg-accent/10 border border-accent/20";
       default:
         return "text-primary bg-secondary";
     }
@@ -102,6 +91,7 @@ export default function UsersPage() {
 
   // Helper for Avatar Initials
   const getInitials = (name) => {
+    if (!name) return "U";
     return name
       .split(" ")
       .map((n) => n[0])
@@ -109,6 +99,16 @@ export default function UsersPage() {
       .substring(0, 2)
       .toUpperCase();
   };
+
+  if (loading) {
+    return (
+      <div className="bg-secondary min-h-screen text-primary p-4 sm:p-6 lg:p-8 flex justify-center items-center">
+        <div className="animate-pulse font-medium tracking-widest uppercase text-primary/50 text-sm">
+          Loading users...
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-secondary min-h-screen text-primary p-4 sm:p-6 lg:p-8">
@@ -124,10 +124,6 @@ export default function UsersPage() {
               privileges.
             </p>
           </div>
-          <button className="flex items-center gap-2 bg-primary text-white text-xs font-medium px-5 py-2.5 rounded-md hover:bg-primary/90 transition-all shadow-sm">
-            <FiUserPlus className="w-4 h-4" />
-            Add New User
-          </button>
         </div>
 
         {/* Toolbar: Search & Filters */}
@@ -154,8 +150,8 @@ export default function UsersPage() {
                 className="w-full sm:w-auto bg-secondary text-primary text-sm px-4 py-2.5 rounded-md border border-primary/10 focus:outline-none focus:border-accent shadow-sm cursor-pointer"
               >
                 <option value="All">All Roles</option>
-                <option value="Customer">Customer</option>
-                <option value="Admin">Admin</option>
+                <option value="user">Customer</option>
+                <option value="admin">Admin</option>
               </select>
             </div>
 
@@ -168,7 +164,6 @@ export default function UsersPage() {
                 <option value="All">All Statuses</option>
                 <option value="Active">Active</option>
                 <option value="Inactive">Inactive</option>
-                <option value="Suspended">Suspended</option>
               </select>
             </div>
           </div>
@@ -226,31 +221,41 @@ export default function UsersPage() {
 
                       {/* Role */}
                       <td className="px-6 py-4">
-                        {user.role === "Admin" ?
-                          <span className="inline-flex items-center gap-1.5 text-xs font-bold text-primary">
-                            <FiShield className="w-3.5 h-3.5 text-primary/60" />
-                            Administrator
-                          </span>
-                        : <span className="text-primary/70">Customer</span>}
+                        <select
+                          value={user.role}
+                          onChange={(e) =>
+                            handleRoleChange(user._id, e.target.value)
+                          }
+                          className={`text-xs font-medium px-2 py-1 rounded border shadow-sm focus:outline-none focus:border-accent cursor-pointer ${
+                            user.role === "admin" ?
+                              "bg-primary/5 border-primary/20 text-primary"
+                            : "bg-secondary text-primary/70 border-primary/10"
+                          }`}
+                        >
+                          <option value="user">Customer</option>
+                          <option value="admin">Admin</option>
+                        </select>
                       </td>
 
                       {/* Status */}
                       <td className="px-6 py-4">
                         <span
-                          className={`inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${getStatusStyle(user.status)}`}
+                          className={`inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${getStatusStyle(
+                            user.isVerified ? "Active" : "Inactive",
+                          )}`}
                         >
-                          {user.status}
+                          {user.isVerified ? "Active" : "Inactive"}
                         </span>
                       </td>
 
                       {/* Lifetime Value (Orders & Total Spent) */}
                       <td className="px-6 py-4">
                         <div className="font-medium text-primary mb-1">
+                          {" "}
                           ${user.totalSpent.toFixed(2)}
                         </div>
                         <div className="text-xs text-primary/50">
-                          {user.ordersCount}{" "}
-                          {user.ordersCount === 1 ? "Order" : "Orders"}
+                          {user.ordersCount} Orders
                         </div>
                       </td>
 
@@ -272,14 +277,10 @@ export default function UsersPage() {
                           >
                             <FiMail className="w-4 h-4" />
                           </button>
-                          <button
-                            className="p-2 text-primary/50 hover:text-primary hover:bg-secondary rounded-md transition-colors"
-                            title="Edit User"
-                          >
-                            <FiEdit2 className="w-4 h-4" />
-                          </button>
-                          {user.role !== "Admin" && (
+
+                          {user.role !== "admin" && (
                             <button
+                              onClick={() => handleDelete(user._id)}
                               className="p-2 text-primary/50 hover:text-accent hover:bg-accent/10 rounded-md transition-colors"
                               title="Delete User"
                             >

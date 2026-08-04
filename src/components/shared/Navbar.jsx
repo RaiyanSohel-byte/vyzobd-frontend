@@ -34,7 +34,7 @@ export default function Navbar() {
   const { cartCount } = useCart();
   // Consume the real user state and logout function from AuthContext
   const { user, logout } = useAuth();
-  console.log("Navbar user:", user);
+
   // Close menus when the route changes
   useEffect(() => {
     setIsOpen(false);

@@ -1,106 +1,136 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   FiSearch,
   FiFilter,
   FiEye,
-  FiMoreVertical,
+  FiTrash2,
   FiDownload,
+  FiAlertTriangle,
 } from "react-icons/fi";
-
-// --- Mock Data ---
-const MOCK_ORDERS = [
-  {
-    _id: "ORD-7091",
-    user: { name: "Elena Rostova", email: "elena@example.com" },
-    items: [{ title: "Architectural Wool Overcoat", quantity: 1, price: 320 }],
-    shippingAddress: "123 Fashion Ave, NY 10001",
-    subtotal: 320,
-    shippingCost: 0,
-    discount: 0,
-    total: 320.0,
-    paymentMethod: "Credit Card",
-    paymentStatus: "Paid",
-    orderStatus: "Processing",
-    createdAt: "2026-08-01T10:30:00Z",
-  },
-  {
-    _id: "ORD-7090",
-    user: { name: "Marcus Chen", email: "marcus@example.com" },
-    items: [{ title: "Minimalist Linen Trousers", quantity: 1, price: 110 }],
-    shippingAddress: "456 Design Blvd, CA 94103",
-    subtotal: 110,
-    shippingCost: 15,
-    discount: 0,
-    total: 125.0,
-    paymentMethod: "PayPal",
-    paymentStatus: "Paid",
-    orderStatus: "Shipped",
-    createdAt: "2026-08-01T09:15:00Z",
-  },
-  {
-    _id: "ORD-7089",
-    user: { name: "Sarah Jenkins", email: "sarah@example.com" },
-    items: [{ title: "Heavyweight Boxy Tee", quantity: 2, price: 65 }],
-    shippingAddress: "789 Studio Rd, TX 73301",
-    subtotal: 130,
-    shippingCost: 0,
-    discount: 10,
-    total: 120.0,
-    paymentMethod: "Credit Card",
-    paymentStatus: "Paid",
-    orderStatus: "Delivered",
-    createdAt: "2026-07-31T14:20:00Z",
-  },
-  {
-    _id: "ORD-7088",
-    user: { name: "David Miller", email: "david@example.com" },
-    items: [{ title: "Heavyweight Boxy Tee", quantity: 1, price: 65 }],
-    shippingAddress: "321 Canvas Ln, FL 33101",
-    subtotal: 65,
-    shippingCost: 15,
-    discount: 0,
-    total: 80.0,
-    paymentMethod: "Credit Card",
-    paymentStatus: "Pending",
-    orderStatus: "Processing",
-    createdAt: "2026-07-31T11:05:00Z",
-  },
-  {
-    _id: "ORD-7087",
-    user: { name: "Amanda Hayes", email: "amanda@example.com" },
-    items: [{ title: "Architectural Wool Overcoat", quantity: 1, price: 320 }],
-    shippingAddress: "999 Minimal St, WA 98101",
-    subtotal: 320,
-    shippingCost: 0,
-    discount: 0,
-    total: 320.0,
-    paymentMethod: "Credit Card",
-    paymentStatus: "Failed",
-    orderStatus: "Cancelled",
-    createdAt: "2026-07-30T16:45:00Z",
-  },
-];
+import { toast } from "react-hot-toast";
+import { orderService } from "@/services/order.service";
+import { exportOrdersToCSV } from "@/utils/exportOrdersToCSV";
 
 export default function OrdersPage() {
+  const [orders, setOrders] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
 
+  // Delete Modal State
+  const [deleteModal, setDeleteModal] = useState({
+    isOpen: false,
+    orderId: null,
+  });
+
+  // Fetch Orders
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        const { data } = await orderService.getAllOrders();
+        setOrders(data?.orders || data?.data || data || []);
+      } catch (error) {
+        console.error("Failed to fetch orders:", error);
+        toast.error("Failed to load orders");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchOrders();
+  }, []);
+
+  // Update Order Status
+  const handleOrderStatusChange = async (orderId, newStatus) => {
+    try {
+      await orderService.updateOrderStatus(orderId, newStatus);
+      setOrders((prev) =>
+        prev.map((order) =>
+          order._id === orderId ? { ...order, orderStatus: newStatus } : order,
+        ),
+      );
+      toast.success(`Order status updated to ${newStatus}`);
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to update order status");
+    }
+  };
+
+  // Update Payment Status
+  const handlePaymentStatusChange = async (orderId, newStatus) => {
+    try {
+      await orderService.updatePaymentStatus(orderId, newStatus);
+      setOrders((prev) =>
+        prev.map((order) =>
+          order._id === orderId ?
+            { ...order, paymentStatus: newStatus }
+          : order,
+        ),
+      );
+      toast.success(`Payment status updated to ${newStatus}`);
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to update payment status");
+    }
+  };
+
+  // Trigger Delete Modal
+  const promptDelete = (orderId) => {
+    setDeleteModal({ isOpen: true, orderId });
+  };
+
+  // Cancel Delete
+  const cancelDelete = () => {
+    setDeleteModal({ isOpen: false, orderId: null });
+  };
+
+  // Execute Delete Order
+  const confirmDeleteOrder = async () => {
+    const { orderId } = deleteModal;
+    if (!orderId) return;
+
+    try {
+      await orderService.deleteOrder(orderId);
+      setOrders((prev) => prev.filter((order) => order._id !== orderId));
+      toast.success("Order deleted successfully");
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to delete order");
+    } finally {
+      setDeleteModal({ isOpen: false, orderId: null });
+    }
+  };
+
   // Filter Logic
   const filteredOrders = useMemo(() => {
-    return MOCK_ORDERS.filter((order) => {
+    return orders.filter((order) => {
+      const searchLower = searchQuery.toLowerCase().trim();
+
+      // Extract the exact 6-character string the user sees on the UI
+      const visibleOrderId =
+        order._id ? `#${order._id.slice(-6).toLowerCase()}` : "";
+
+      // Fallbacks for standard fields
+      const fullOrderId = order._id?.toLowerCase() || "";
+      const userName = order.user?.name?.toLowerCase() || "";
+      const userEmail = order.user?.email?.toLowerCase() || "";
+
+      // Match against the visible ID, the full raw ID, user name, or email
       const matchesSearch =
-        order._id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.user.email.toLowerCase().includes(searchQuery.toLowerCase());
+        !searchLower ||
+        visibleOrderId.includes(searchLower) ||
+        fullOrderId.includes(searchLower) ||
+        userName.includes(searchLower) ||
+        userEmail.includes(searchLower);
 
       const matchesStatus =
         statusFilter === "All" || order.orderStatus === statusFilter;
 
       return matchesSearch && matchesStatus;
     });
-  }, [searchQuery, statusFilter]);
+  }, [orders, searchQuery, statusFilter]);
 
   // Helper for Order Status Badges
   const getOrderStatusStyle = (status) => {
@@ -114,7 +144,7 @@ export default function OrdersPage() {
       case "Cancelled":
         return "bg-accent/10 text-accent";
       default:
-        return "bg-secondary text-primary";
+        return "bg-secondary text-primary border border-primary/10";
     }
   };
 
@@ -123,17 +153,30 @@ export default function OrdersPage() {
     switch (status) {
       case "Paid":
         return "text-emerald-600 bg-emerald-50 border border-emerald-200";
-      case "Pending":
-        return "text-amber-600 bg-amber-50 border border-amber-200";
       case "Failed":
         return "text-accent bg-accent/10 border border-accent/20";
       default:
-        return "text-primary bg-secondary";
+        return "text-amber-600 bg-amber-50 border border-amber-200";
     }
   };
 
+  const handleExportCSV = () => {
+    exportOrdersToCSV(filteredOrders);
+    toast.success("CSV downloaded successfully");
+  };
+
+  if (isLoading) {
+    return (
+      <div className="bg-secondary min-h-screen text-primary p-4 sm:p-6 lg:p-8 flex items-center justify-center">
+        <div className="animate-pulse font-medium tracking-widest uppercase text-primary/50 text-sm">
+          Loading Orders...
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="bg-secondary min-h-screen text-primary p-4 sm:p-6 lg:p-8">
+    <div className="bg-secondary min-h-screen text-primary p-4 sm:p-6 lg:p-8 relative">
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Page Header */}
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-primary/10 pb-6">
@@ -145,7 +188,10 @@ export default function OrdersPage() {
               View, track, and manage all customer orders.
             </p>
           </div>
-          <button className="flex items-center gap-2 bg-primary text-white text-xs font-medium px-5 py-2.5 rounded-md hover:bg-primary/90 transition-all shadow-sm">
+          <button
+            onClick={handleExportCSV}
+            className="flex items-center gap-2 bg-primary text-white text-xs font-medium px-5 py-2.5 rounded-md hover:bg-primary/90 transition-all shadow-sm"
+          >
             <FiDownload className="w-4 h-4" />
             Export CSV
           </button>
@@ -177,6 +223,7 @@ export default function OrdersPage() {
               className="w-full sm:w-auto bg-secondary text-primary text-sm px-4 py-2.5 rounded-md border border-primary/10 focus:outline-none focus:border-accent shadow-sm cursor-pointer"
             >
               <option value="All">All Orders</option>
+              <option value="Pending">Pending</option>
               <option value="Processing">Processing</option>
               <option value="Shipped">Shipped</option>
               <option value="Delivered">Delivered</option>
@@ -220,21 +267,21 @@ export default function OrdersPage() {
                       {/* Order ID & Items */}
                       <td className="px-6 py-4">
                         <div className="font-medium text-primary mb-1">
-                          {order._id}
+                          #{order._id.slice(-6).toUpperCase()}
                         </div>
                         <div className="text-xs text-primary/50 truncate max-w-[150px]">
-                          {order.items.length} item
-                          {order.items.length !== 1 ? "s" : ""}
+                          {order.items?.length || 0} item
+                          {order.items?.length !== 1 ? "s" : ""}
                         </div>
                       </td>
 
                       {/* Customer Info */}
                       <td className="px-6 py-4">
                         <div className="font-medium text-primary mb-1">
-                          {order.user.name}
+                          {order.user?.name || "Guest"}
                         </div>
                         <div className="text-xs text-primary/50">
-                          {order.user.email}
+                          {order.user?.email || "N/A"}
                         </div>
                       </td>
 
@@ -249,25 +296,42 @@ export default function OrdersPage() {
 
                       {/* Total Pricing */}
                       <td className="px-6 py-4 font-medium text-primary">
-                        ${order.total.toFixed(2)}
+                        ${(order.total || 0).toFixed(2)}
                       </td>
 
-                      {/* Payment Status */}
+                      {/* Payment Status (Editable) */}
                       <td className="px-6 py-4">
-                        <span
-                          className={`inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${getPaymentStatusStyle(order.paymentStatus)}`}
+                        <select
+                          value={order.paymentStatus}
+                          onChange={(e) =>
+                            handlePaymentStatusChange(order._id, e.target.value)
+                          }
+                          className={`inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider outline-none cursor-pointer ${getPaymentStatusStyle(
+                            order.paymentStatus,
+                          )}`}
                         >
-                          {order.paymentStatus}
-                        </span>
+                          <option value="Pending">Pending</option>
+                          <option value="Paid">Paid</option>
+                        </select>
                       </td>
 
-                      {/* Order Status */}
+                      {/* Order Status (Editable) */}
                       <td className="px-6 py-4">
-                        <span
-                          className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${getOrderStatusStyle(order.orderStatus)}`}
+                        <select
+                          value={order.orderStatus}
+                          onChange={(e) =>
+                            handleOrderStatusChange(order._id, e.target.value)
+                          }
+                          className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider outline-none cursor-pointer ${getOrderStatusStyle(
+                            order.orderStatus,
+                          )}`}
                         >
-                          {order.orderStatus}
-                        </span>
+                          <option value="Pending">Pending</option>
+                          <option value="Processing">Processing</option>
+                          <option value="Shipped">Shipped</option>
+                          <option value="Delivered">Delivered</option>
+                          <option value="Cancelled">Cancelled</option>
+                        </select>
                       </td>
 
                       {/* Actions */}
@@ -280,10 +344,11 @@ export default function OrdersPage() {
                             <FiEye className="w-4 h-4" />
                           </button>
                           <button
-                            className="p-2 text-primary/50 hover:text-primary hover:bg-secondary rounded-md transition-colors"
-                            title="More Actions"
+                            onClick={() => promptDelete(order._id)}
+                            className="p-2 text-primary/50 hover:text-accent hover:bg-accent/10 rounded-md transition-colors"
+                            title="Delete Order"
                           >
-                            <FiMoreVertical className="w-4 h-4" />
+                            <FiTrash2 className="w-4 h-4" />
                           </button>
                         </div>
                       </td>
@@ -314,6 +379,46 @@ export default function OrdersPage() {
           </div>
         </div>
       </div>
+
+      {/* Designed Delete Confirmation Modal */}
+      {deleteModal.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-xl shadow-xl border border-primary/10 max-w-sm w-full p-6 animate-in fade-in zoom-in duration-200">
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <FiAlertTriangle className="w-5 h-5 text-accent" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-primary">
+                  Delete Order?
+                </h3>
+                <p className="text-sm text-primary/60 mt-1">
+                  Are you sure you want to delete order{" "}
+                  <span className="font-medium text-primary">
+                    #{deleteModal.orderId?.slice(-6).toUpperCase()}
+                  </span>
+                  ? This action cannot be undone.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 mt-8">
+              <button
+                onClick={cancelDelete}
+                className="px-4 py-2 text-sm font-medium text-primary bg-secondary border border-primary/10 hover:bg-secondary/70 rounded-md transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDeleteOrder}
+                className="px-4 py-2 text-sm font-medium text-white bg-accent hover:bg-accent/90 rounded-md transition-colors shadow-sm"
+              >
+                Delete Order
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

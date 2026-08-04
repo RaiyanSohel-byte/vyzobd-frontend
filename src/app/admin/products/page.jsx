@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import {
   FiSearch,
@@ -9,25 +9,88 @@ import {
   FiTrash2,
   FiPlus,
   FiStar,
+  FiDownload,
+  FiAlertTriangle,
+  FiX,
 } from "react-icons/fi";
+import { toast } from "react-hot-toast";
+import { productService } from "@/services/product.service";
+import { exportProductsToCSV } from "@/utils/exportProductsToCSV";
+
+const initialFormState = {
+  title: "",
+  slug: "",
+  description: "",
+  price: "",
+  discount: 0,
+  category: "",
+  images: "",
+  stock: 0,
+  isFeatured: false,
+};
 
 export default function ProductsPage() {
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("All");
 
+  // Delete Modal State
+  const [deleteModal, setDeleteModal] = useState({
+    isOpen: false,
+    productId: null,
+  });
+
+  // Product Add/Edit Modal State
+  const [productModal, setProductModal] = useState({
+    isOpen: false,
+    mode: "add", // 'add' | 'edit'
+    productId: null,
+  });
+
+  const [formData, setFormData] = useState(initialFormState);
+
+  // Fetch Products
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const fetchProducts = async () => {
+    try {
+      const { data } = await productService.getProducts();
+      setProducts(data.data || data);
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to load products");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Filter Logic
   const filteredProducts = useMemo(() => {
-    return MOCK_PRODUCTS.filter((product) => {
-      const matchesSearch =
-        product.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        product._id.toLowerCase().includes(searchQuery.toLowerCase());
+    return products.filter((product) => {
+      const titleMatch = product.title
+        ?.toLowerCase()
+        .includes(searchQuery.toLowerCase());
+      const idMatch = product._id
+        ?.toLowerCase()
+        .includes(searchQuery.toLowerCase());
+      const matchesSearch = titleMatch || idMatch;
 
       const matchesCategory =
         categoryFilter === "All" || product.category === categoryFilter;
 
       return matchesSearch && matchesCategory;
     });
-  }, [searchQuery, categoryFilter]);
+  }, [products, searchQuery, categoryFilter]);
+
+  // Dynamic Categories from MongoDB data
+  const categories = [
+    "All",
+    ...new Set(products.map((product) => product.category).filter(Boolean)),
+  ];
 
   // Helper for Stock Status Badges
   const getStockStyle = (stock) => {
@@ -43,8 +106,154 @@ export default function ProductsPage() {
     return "In Stock";
   };
 
+  // Delete Handlers
+  const promptDelete = (id) => {
+    setDeleteModal({ isOpen: true, productId: id });
+  };
+
+  const cancelDelete = () => {
+    setDeleteModal({ isOpen: false, productId: null });
+  };
+
+  const confirmDeleteProduct = async () => {
+    const { productId } = deleteModal;
+    if (!productId) return;
+
+    try {
+      await productService.deleteProduct(productId);
+      setProducts((prev) =>
+        prev.filter((product) => product._id !== productId),
+      );
+      toast.success("Product deleted successfully");
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to delete product");
+    } finally {
+      setDeleteModal({ isOpen: false, productId: null });
+    }
+  };
+
+  // Product Modal Handlers
+  const openAddModal = () => {
+    setFormData(initialFormState);
+    setProductModal({ isOpen: true, mode: "add", productId: null });
+  };
+
+  const openEditModal = (product) => {
+    setFormData({
+      title: product.title || "",
+      slug: product.slug || "",
+      description: product.description || "",
+      price: product.price ?? "",
+      discount: product.discount ?? 0,
+      category: product.category || "",
+      images: Array.isArray(product.images) ? product.images.join("\n") : "",
+      stock: product.stock ?? 0,
+      isFeatured: Boolean(product.isFeatured),
+    });
+    setProductModal({ isOpen: true, mode: "edit", productId: product._id });
+  };
+
+  const closeProductModal = () => {
+    setProductModal({ isOpen: false, mode: "add", productId: null });
+    setFormData(initialFormState);
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value, type, checked } = e.target;
+
+    setFormData((prev) => {
+      const updated = {
+        ...prev,
+        [name]: type === "checkbox" ? checked : value,
+      };
+
+      // Auto-generate slug from title if user hasn't modified slug manually in 'add' mode
+      if (name === "title" && productModal.mode === "add") {
+        updated.slug = value
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/(^-|-$)+/g, "");
+      }
+
+      return updated;
+    });
+  };
+
+  const handleSubmitProduct = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    const payload = {
+      title: formData.title.trim(),
+      slug:
+        formData.slug.trim() ||
+        formData.title
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/(^-|-$)+/g, ""),
+      description: formData.description.trim(),
+      price: Number(formData.price),
+      discount: Number(formData.discount) || 0,
+      category: formData.category.trim(),
+      images: formData.images
+        .split("\n")
+        .map((url) => url.trim())
+        .filter(Boolean),
+      stock: Number(formData.stock) || 0,
+      isFeatured: formData.isFeatured,
+    };
+
+    try {
+      if (productModal.mode === "add") {
+        const { data } = await productService.createProduct(payload);
+        const createdProduct = data.data || data;
+        setProducts((prev) => [createdProduct, ...prev]);
+        toast.success("Product created successfully");
+      } else {
+        const { data } = await productService.updateProduct(
+          productModal.productId,
+          payload,
+        );
+        const updatedProduct = data.data || data;
+        setProducts((prev) =>
+          prev.map((p) =>
+            p._id === productModal.productId ? { ...p, ...updatedProduct } : p,
+          ),
+        );
+        toast.success("Product updated successfully");
+      }
+      closeProductModal();
+    } catch (error) {
+      console.error(error);
+      toast.error(error.response?.data?.message || "Failed to save product");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Export handling
+  const handleExportCSV = () => {
+    if (filteredProducts.length === 0) {
+      toast.error("No products to export");
+      return;
+    }
+    exportProductsToCSV(filteredProducts);
+    toast.success("CSV downloaded successfully");
+  };
+
+  if (loading) {
+    return (
+      <div className="bg-secondary min-h-screen text-primary p-4 sm:p-6 lg:p-8 flex items-center justify-center">
+        <div className="animate-pulse font-medium tracking-widest uppercase text-primary/50 text-sm">
+          Loading products...
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="bg-secondary min-h-screen text-primary p-4 sm:p-6 lg:p-8">
+    <div className="bg-secondary min-h-screen text-primary p-4 sm:p-6 lg:p-8 relative">
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Page Header */}
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-primary/10 pb-6">
@@ -56,10 +265,22 @@ export default function ProductsPage() {
               Manage your catalog, pricing, and stock levels.
             </p>
           </div>
-          <button className="flex items-center gap-2 bg-primary text-white text-xs font-medium px-5 py-2.5 rounded-md hover:bg-primary/90 transition-all shadow-sm">
-            <FiPlus className="w-4 h-4" />
-            Add New Product
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleExportCSV}
+              className="flex items-center gap-2 bg-white text-primary text-xs font-medium px-5 py-2.5 rounded-md border border-primary/10 hover:bg-secondary/50 transition-all shadow-sm"
+            >
+              <FiDownload className="w-4 h-4" />
+              Export CSV
+            </button>
+            <button
+              onClick={openAddModal}
+              className="flex items-center gap-2 bg-primary text-white text-xs font-medium px-5 py-2.5 rounded-md hover:bg-primary/90 transition-all shadow-sm"
+            >
+              <FiPlus className="w-4 h-4" />
+              Add New Product
+            </button>
+          </div>
         </div>
 
         {/* Toolbar: Search & Filters */}
@@ -87,11 +308,11 @@ export default function ProductsPage() {
               onChange={(e) => setCategoryFilter(e.target.value)}
               className="w-full sm:w-auto bg-secondary text-primary text-sm px-4 py-2.5 rounded-md border border-primary/10 focus:outline-none focus:border-accent shadow-sm cursor-pointer"
             >
-              <option value="All">All Categories</option>
-              <option value="Outerwear">Outerwear</option>
-              <option value="Tops">Tops</option>
-              <option value="Bottoms">Bottoms</option>
-              <option value="Accessories">Accessories</option>
+              {categories.map((category) => (
+                <option key={category} value={category}>
+                  {category}
+                </option>
+              ))}
             </select>
           </div>
         </div>
@@ -135,17 +356,20 @@ export default function ProductsPage() {
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-4">
                             <div className="w-12 h-14 bg-secondary rounded-md overflow-hidden relative flex-shrink-0 border border-primary/10">
-                              {/* Assuming Next.js Image is used for real images, fallback to div for styling */}
-                              <div className="w-full h-full bg-primary/5 flex items-center justify-center text-[10px] text-primary/30 uppercase">
-                                Img
-                              </div>
+                              <Image
+                                src={product.images?.[0] || "/placeholder.png"}
+                                alt={product.title || "Product image"}
+                                fill
+                                className="object-cover"
+                                sizes="48px"
+                              />
                             </div>
                             <div>
                               <div className="font-medium text-primary mb-1 truncate max-w-[200px]">
                                 {product.title}
                               </div>
                               <div className="text-xs text-primary/50">
-                                {product._id}
+                                #{product._id?.slice(-6).toUpperCase()}
                               </div>
                             </div>
                           </div>
@@ -164,7 +388,7 @@ export default function ProductsPage() {
                             </span>
                             {product.discount > 0 && (
                               <span className="text-xs text-primary/40 line-through">
-                                ${product.price.toFixed(2)}
+                                ${(product.price || 0).toFixed(2)}
                               </span>
                             )}
                           </div>
@@ -179,12 +403,14 @@ export default function ProductsPage() {
                         <td className="px-6 py-4">
                           <div className="flex flex-col items-start gap-1.5">
                             <span
-                              className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${getStockStyle(product.stock)}`}
+                              className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${getStockStyle(
+                                product.stock,
+                              )}`}
                             >
                               {getStockLabel(product.stock)}
                             </span>
                             <span className="text-xs text-primary/60">
-                              {product.stock} units left
+                              {product.stock || 0} units left
                             </span>
                           </div>
                         </td>
@@ -200,7 +426,7 @@ export default function ProductsPage() {
                             )}
                             <div className="flex items-center gap-1 text-xs text-primary/60">
                               <FiStar className="w-3 h-3" />
-                              {product.rating} ({product.numReviews})
+                              {product.rating || 0} ({product.numReviews || 0})
                             </div>
                           </div>
                         </td>
@@ -209,12 +435,14 @@ export default function ProductsPage() {
                         <td className="px-6 py-4 text-right">
                           <div className="flex items-center justify-end gap-2">
                             <button
+                              onClick={() => openEditModal(product)}
                               className="p-2 text-primary/50 hover:text-primary hover:bg-secondary rounded-md transition-colors"
                               title="Edit Product"
                             >
                               <FiEdit2 className="w-4 h-4" />
                             </button>
                             <button
+                              onClick={() => promptDelete(product._id)}
                               className="p-2 text-primary/50 hover:text-accent hover:bg-accent/10 rounded-md transition-colors"
                               title="Delete Product"
                             >
@@ -250,6 +478,242 @@ export default function ProductsPage() {
           </div>
         </div>
       </div>
+
+      {/* Add / Edit Product Modal */}
+      {productModal.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-xl border border-primary/10 max-w-2xl w-full my-8 p-6 animate-in fade-in zoom-in duration-200">
+            <div className="flex items-center justify-between border-b border-primary/10 pb-4">
+              <h3 className="text-lg font-semibold text-primary">
+                {productModal.mode === "add" ?
+                  "Add New Product"
+                : "Edit Product"}
+              </h3>
+              <button
+                onClick={closeProductModal}
+                className="p-1 text-primary/50 hover:text-primary rounded-md transition-colors"
+              >
+                <FiX className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitProduct} className="space-y-4 mt-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Title */}
+                <div>
+                  <label className="block text-xs font-semibold text-primary/70 mb-1">
+                    Title *
+                  </label>
+                  <input
+                    type="text"
+                    name="title"
+                    required
+                    value={formData.title}
+                    onChange={handleInputChange}
+                    placeholder="Product title"
+                    className="w-full bg-secondary text-primary text-sm px-3 py-2 rounded-md border border-primary/10 focus:outline-none focus:border-accent"
+                  />
+                </div>
+
+                {/* Slug */}
+                <div>
+                  <label className="block text-xs font-semibold text-primary/70 mb-1">
+                    Slug *
+                  </label>
+                  <input
+                    type="text"
+                    name="slug"
+                    required
+                    value={formData.slug}
+                    onChange={handleInputChange}
+                    placeholder="product-slug"
+                    className="w-full bg-secondary text-primary text-sm px-3 py-2 rounded-md border border-primary/10 focus:outline-none focus:border-accent"
+                  />
+                </div>
+
+                {/* Price */}
+                <div>
+                  <label className="block text-xs font-semibold text-primary/70 mb-1">
+                    Price ($) *
+                  </label>
+                  <input
+                    type="number"
+                    name="price"
+                    step="0.01"
+                    min="0"
+                    required
+                    value={formData.price}
+                    onChange={handleInputChange}
+                    placeholder="0.00"
+                    className="w-full bg-secondary text-primary text-sm px-3 py-2 rounded-md border border-primary/10 focus:outline-none focus:border-accent"
+                  />
+                </div>
+
+                {/* Discount */}
+                <div>
+                  <label className="block text-xs font-semibold text-primary/70 mb-1">
+                    Discount (%)
+                  </label>
+                  <input
+                    type="number"
+                    name="discount"
+                    min="0"
+                    max="100"
+                    value={formData.discount}
+                    onChange={handleInputChange}
+                    placeholder="0"
+                    className="w-full bg-secondary text-primary text-sm px-3 py-2 rounded-md border border-primary/10 focus:outline-none focus:border-accent"
+                  />
+                </div>
+
+                {/* Category */}
+                <div>
+                  <label className="block text-xs font-semibold text-primary/70 mb-1">
+                    Category *
+                  </label>
+                  <input
+                    type="text"
+                    name="category"
+                    required
+                    value={formData.category}
+                    onChange={handleInputChange}
+                    placeholder="e.g. Fruits, Vegetables"
+                    className="w-full bg-secondary text-primary text-sm px-3 py-2 rounded-md border border-primary/10 focus:outline-none focus:border-accent"
+                  />
+                </div>
+
+                {/* Stock */}
+                <div>
+                  <label className="block text-xs font-semibold text-primary/70 mb-1">
+                    Stock Quantity
+                  </label>
+                  <input
+                    type="number"
+                    name="stock"
+                    min="0"
+                    value={formData.stock}
+                    onChange={handleInputChange}
+                    placeholder="0"
+                    className="w-full bg-secondary text-primary text-sm px-3 py-2 rounded-md border border-primary/10 focus:outline-none focus:border-accent"
+                  />
+                </div>
+              </div>
+
+              {/* Description */}
+              <div>
+                <label className="block text-xs font-semibold text-primary/70 mb-1">
+                  Description *
+                </label>
+                <textarea
+                  name="description"
+                  required
+                  rows={3}
+                  value={formData.description}
+                  onChange={handleInputChange}
+                  placeholder="Detailed product description..."
+                  className="w-full bg-secondary text-primary text-sm px-3 py-2 rounded-md border border-primary/10 focus:outline-none focus:border-accent resize-none"
+                />
+              </div>
+
+              {/* Image URLs */}
+              <div>
+                <label className="block text-xs font-semibold text-primary/70 mb-1">
+                  Image URLs (One per line)
+                </label>
+                <textarea
+                  name="images"
+                  rows={2}
+                  value={formData.images}
+                  onChange={handleInputChange}
+                  placeholder="https://example.com/image1.jpg&#10;https://example.com/image2.jpg"
+                  className="w-full bg-secondary text-primary text-sm px-3 py-2 rounded-md border border-primary/10 focus:outline-none focus:border-accent resize-none"
+                />
+              </div>
+
+              {/* Featured Toggle */}
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  type="checkbox"
+                  id="isFeatured"
+                  name="isFeatured"
+                  checked={formData.isFeatured}
+                  onChange={handleInputChange}
+                  className="w-4 h-4 text-primary rounded border-primary/20 focus:ring-accent cursor-pointer"
+                />
+                <label
+                  htmlFor="isFeatured"
+                  className="text-sm text-primary font-medium cursor-pointer"
+                >
+                  Mark as Featured Product
+                </label>
+              </div>
+
+              {/* Form Buttons */}
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-primary/10">
+                <button
+                  type="button"
+                  onClick={closeProductModal}
+                  disabled={isSubmitting}
+                  className="px-4 py-2 text-sm font-medium text-primary bg-secondary border border-primary/10 hover:bg-secondary/70 rounded-md transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="px-5 py-2 text-sm font-medium text-white bg-primary hover:bg-primary/90 disabled:opacity-50 rounded-md transition-colors shadow-sm"
+                >
+                  {isSubmitting ?
+                    "Saving..."
+                  : productModal.mode === "add" ?
+                    "Create Product"
+                  : "Save Changes"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteModal.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-xl shadow-xl border border-primary/10 max-w-sm w-full p-6 animate-in fade-in zoom-in duration-200">
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <FiAlertTriangle className="w-5 h-5 text-accent" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-primary">
+                  Delete Product?
+                </h3>
+                <p className="text-sm text-primary/60 mt-1">
+                  Are you sure you want to delete product{" "}
+                  <span className="font-medium text-primary">
+                    #{deleteModal.productId?.slice(-6).toUpperCase()}
+                  </span>
+                  ? This action cannot be undone.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 mt-8">
+              <button
+                onClick={cancelDelete}
+                className="px-4 py-2 text-sm font-medium text-primary bg-secondary border border-primary/10 hover:bg-secondary/70 rounded-md transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDeleteProduct}
+                className="px-4 py-2 text-sm font-medium text-white bg-accent hover:bg-accent/90 rounded-md transition-colors shadow-sm"
+              >
+                Delete Product
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

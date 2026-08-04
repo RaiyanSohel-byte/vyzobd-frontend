@@ -12,6 +12,7 @@ import {
   FiX,
   FiLogOut,
 } from "react-icons/fi";
+import { useAuth } from "@/hooks/useAuth";
 
 const NAV_LINKS = [
   { name: "Dashboard", href: "/admin", icon: FiHome },
@@ -23,6 +24,7 @@ const NAV_LINKS = [
 export default function AdminSidebar() {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
+  const { logout } = useAuth();
 
   // Close mobile sidebar when route changes
   useEffect(() => {
@@ -37,6 +39,19 @@ export default function AdminSidebar() {
       document.body.style.overflow = "unset";
     }
   }, [isOpen]);
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      setIsDropdownOpen(false);
+      setIsOpen(false);
+      toast.success("Logged Out");
+      router.replace("/login");
+      router.refresh();
+    } catch (error) {
+      console.error("Logout failed", error);
+    }
+  };
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full bg-white border-r border-primary/10">
@@ -84,7 +99,10 @@ export default function AdminSidebar() {
 
       {/* Footer / Logout */}
       <div className="p-4 border-t border-primary/10">
-        <button className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-primary/70 rounded-md hover:bg-accent/10 hover:text-accent transition-colors group">
+        <button
+          onClick={handleLogout}
+          className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-primary/70 rounded-md hover:bg-accent/10 hover:text-accent transition-colors group"
+        >
           <FiLogOut className="w-5 h-5 text-primary/50 group-hover:text-accent transition-colors" />
           <span>Sign Out</span>
         </button>

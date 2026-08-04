@@ -19,7 +19,7 @@ export default function ProductsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
 
-  const [priceRange, setPriceRange] = useState([0, 500]);
+  const [priceRange, setPriceRange] = useState([0, 100000]);
   const [inStockOnly, setInStockOnly] = useState(false);
   const [sortBy, setSortBy] = useState("featured");
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
@@ -37,7 +37,8 @@ export default function ProductsPage() {
         // Handle products data structure
         const productList = productsRes?.data || productsRes || [];
         setProducts(productList);
-
+        console.log(productList);
+        console.log(productList.length);
         // Handle categories data structure (supporting string arrays or object arrays with name/title)
         const categoryList = categoriesRes?.data || categoriesRes || [];
         const formattedCategories = categoryList.map((cat) =>
@@ -62,7 +63,7 @@ export default function ProductsPage() {
     setSearchQuery("");
     setSelectedCategory("All");
 
-    setPriceRange([0, 500]);
+    setPriceRange([0, 100000]);
     setInStockOnly(false);
     setSortBy("featured");
   };
@@ -227,7 +228,7 @@ export default function ProductsPage() {
             {(priceRange[0] > 0 || priceRange[1] < 500) && (
               <FilterTag
                 label={`Price: $${priceRange[0]} - $${priceRange[1]}`}
-                onRemove={() => setPriceRange([0, 500])}
+                onRemove={() => setPriceRange([0, 100000])}
               />
             )}
             <button
@@ -415,7 +416,7 @@ function SidebarContent({
         <input
           type="range"
           min="0"
-          max="500"
+          max="100000"
           step="10"
           value={priceRange[1]}
           onChange={(e) =>
