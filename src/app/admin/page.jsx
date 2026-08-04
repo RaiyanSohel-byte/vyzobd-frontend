@@ -62,7 +62,7 @@ export default function AdminDashboard() {
     {
       id: "revenue",
       title: "Total Revenue",
-      value: `$${(dashboard.stats?.totalRevenue || 0).toLocaleString("en-US", {
+      value: `৳${(dashboard.stats?.totalRevenue || 0).toLocaleString("en-US", {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       })}`,

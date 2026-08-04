@@ -438,11 +438,11 @@ export default function ProductsPage() {
                         <td className="px-6 py-4">
                           <div className="flex items-baseline gap-2">
                             <span className="font-medium text-primary">
-                              ${finalPrice.toFixed(2)}
+                              ৳{finalPrice.toFixed(2)}
                             </span>
                             {product.discount > 0 && (
                               <span className="text-xs text-primary/40 line-through">
-                                ${(product.price || 0).toFixed(2)}
+                                ৳{(product.price || 0).toFixed(2)}
                               </span>
                             )}
                           </div>
@@ -569,7 +569,7 @@ export default function ProductsPage() {
                 {/* Price */}
                 <div>
                   <label className="block text-xs font-semibold text-primary/70 mb-1">
-                    Price ($) *
+                    Price (৳) *
                   </label>
                   <input
                     type="number"

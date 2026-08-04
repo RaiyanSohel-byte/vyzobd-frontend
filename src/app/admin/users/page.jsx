@@ -252,7 +252,7 @@ export default function UsersPage() {
                       <td className="px-6 py-4">
                         <div className="font-medium text-primary mb-1">
                           {" "}
-                          ${user.totalSpent.toFixed(2)}
+                          ৳{user.totalSpent.toFixed(2)}
                         </div>
                         <div className="text-xs text-primary/50">
                           {user.ordersCount} Orders

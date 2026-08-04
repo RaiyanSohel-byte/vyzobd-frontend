@@ -525,7 +525,7 @@ export default function CheckoutPage() {
                       </div>
                     </div>
                     <div className="text-sm font-bold">
-                      ${(item.product.price * item.quantity).toFixed(2)}
+                      ৳{(item.product.price * item.quantity).toFixed(2)}
                     </div>
                   </div>
                 ))}
@@ -536,7 +536,7 @@ export default function CheckoutPage() {
                 <div className="flex justify-between items-center">
                   <span>Subtotal</span>
                   <span className="font-medium text-primary">
-                    ${subtotal.toFixed(2)}
+                    ৳{subtotal.toFixed(2)}
                   </span>
                 </div>
 
@@ -551,7 +551,7 @@ export default function CheckoutPage() {
                       : "Outside Dhaka"}
                     </span>
                     <span className="text-xs opacity-70">
-                      ${shippingCost.toFixed(2)}
+                      ৳{shippingCost.toFixed(2)}
                     </span>
                   </div>
                 </div>
@@ -559,7 +559,7 @@ export default function CheckoutPage() {
                 <div className="flex justify-between items-center pt-2">
                   <span>Shipping Cost</span>
                   <span className="font-medium text-primary">
-                    ${shippingCost.toFixed(2)}
+                    ৳{shippingCost.toFixed(2)}
                   </span>
                 </div>
 

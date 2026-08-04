@@ -296,7 +296,7 @@ export default function OrdersPage() {
 
                       {/* Total Pricing */}
                       <td className="px-6 py-4 font-medium text-primary">
-                        ${(order.total || 0).toFixed(2)}
+                        ৳{(order.total || 0).toFixed(2)}
                       </td>
 
                       {/* Payment Status (Editable) */}

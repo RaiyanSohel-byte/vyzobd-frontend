@@ -107,11 +107,11 @@ const ProductDetails = async ({ params }) => {
             {/* Price */}
             <div className="flex items-baseline gap-3 mb-8">
               <span className="text-2xl font-medium tracking-tight">
-                ${finalPrice.toFixed(2)}
+                ৳{finalPrice.toFixed(2)}
               </span>
               {hasDiscount && (
                 <span className="text-lg text-primary/40 line-through tracking-tight">
-                  ${product.price.toFixed(2)}
+                  ৳{product.price.toFixed(2)}
                 </span>
               )}
             </div>

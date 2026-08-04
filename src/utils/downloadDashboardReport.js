@@ -33,7 +33,7 @@ export const downloadDashboardReport = (dashboard) => {
     body: dashboard.recentOrders.map((order) => [
       "#" + order._id.slice(-6).toUpperCase(),
       order.user?.name || order.shippingAddress?.name || "Guest",
-      `$${order.total}`,
+      `৳${order.total}`,
       order.orderStatus,
       new Date(order.createdAt).toLocaleDateString(),
     ]),

@@ -176,7 +176,7 @@ export default function MyOrdersPage() {
                         Total
                       </span>
                       <span className="text-sm font-bold">
-                        ${order.total?.toFixed(2)}
+                        ৳{order.total?.toFixed(2)}
                       </span>
                     </div>
                     <div>
@@ -228,11 +228,11 @@ export default function MyOrdersPage() {
                             {item.title || item.product?.title}
                           </h4>
                           <p className="text-xs text-primary/60 mt-1">
-                            Qty: {item.quantity} × ${item.price?.toFixed(2)}
+                            Qty: {item.quantity} × ৳{item.price?.toFixed(2)}
                           </p>
                         </div>
                         <div className="text-sm font-bold text-primary">
-                          $
+                          ৳
                           {((item.price || 0) * (item.quantity || 1)).toFixed(
                             2,
                           )}
@@ -281,21 +281,21 @@ export default function MyOrdersPage() {
                           </div>
                           <div className="flex justify-between">
                             <span>Subtotal:</span>
-                            <span>${order.subtotal?.toFixed(2)}</span>
+                            <span>৳{order.subtotal?.toFixed(2)}</span>
                           </div>
                           <div className="flex justify-between">
                             <span>Shipping Fee:</span>
-                            <span>${order.shippingCost?.toFixed(2)}</span>
+                            <span>৳{order.shippingCost?.toFixed(2)}</span>
                           </div>
                           {order.discount > 0 && (
                             <div className="flex justify-between text-accent">
                               <span>Discount:</span>
-                              <span>-${order.discount?.toFixed(2)}</span>
+                              <span>-৳{order.discount?.toFixed(2)}</span>
                             </div>
                           )}
                           <div className="flex justify-between font-bold text-sm text-primary pt-2 border-t border-primary/10">
                             <span>Total Paid:</span>
-                            <span>${order.total?.toFixed(2)}</span>
+                            <span>৳{order.total?.toFixed(2)}</span>
                           </div>
                         </div>
                       </div>

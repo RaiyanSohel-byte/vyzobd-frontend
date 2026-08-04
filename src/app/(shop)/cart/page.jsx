@@ -81,11 +81,11 @@ const CartItemCard = memo(({ item, isUpdating, onUpdate, onRemove }) => {
           {/* Price Block */}
           <div className="flex items-baseline gap-2 mb-4">
             <span className="text-sm font-bold">
-              ${itemFinalPrice.toFixed(2)}
+              ৳{itemFinalPrice.toFixed(2)}
             </span>
             {(product.discount || 0) > 0 && (
               <span className="text-xs text-primary/40 line-through">
-                ${(product.price || 0).toFixed(2)}
+                ৳{(product.price || 0).toFixed(2)}
               </span>
             )}
           </div>
@@ -396,7 +396,7 @@ export default function CartSection() {
                 <div className="flex justify-between items-center">
                   <span>Subtotal</span>
                   <span className="font-medium text-primary">
-                    ${subtotal.toFixed(2)}
+                    ৳{subtotal.toFixed(2)}
                   </span>
                 </div>
 
@@ -417,7 +417,7 @@ export default function CartSection() {
                     >
                       Inside Dhaka
                       <span className="block text-[16px] font-bold ">
-                        $80.00
+                        ৳80.00
                       </span>
                     </button>
                     <button
@@ -431,7 +431,7 @@ export default function CartSection() {
                     >
                       Outside Dhaka
                       <span className="block text-[16px] font-bold">
-                        $130.00
+                        ৳130.00
                       </span>
                     </button>
                   </div>
@@ -440,7 +440,7 @@ export default function CartSection() {
                 <div className="flex justify-between items-center pt-2">
                   <span>Shipping Cost</span>
                   <span className="font-medium text-primary">
-                    ${shippingCost.toFixed(2)}
+                    ৳{shippingCost.toFixed(2)}
                   </span>
                 </div>
               </div>

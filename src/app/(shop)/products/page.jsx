@@ -238,7 +238,7 @@ export default function ProductsPage() {
             )}
             {(priceRange[0] > 0 || priceRange[1] < 500) && (
               <FilterTag
-                label={`Price: $${priceRange[0]} - $${priceRange[1]}`}
+                label={`Price: ৳${priceRange[0]} - ৳${priceRange[1]}`}
                 onRemove={() => setPriceRange([0, maxPrice])}
               />
             )}
@@ -422,7 +422,7 @@ function SidebarContent({
             Price Range
           </h4>
           <span className="text-xs font-medium text-primary">
-            ${priceRange[0]} - ${priceRange[1]}
+            ৳{priceRange[0]} - ৳{priceRange[1]}
           </span>
         </div>
         <input
@@ -536,11 +536,11 @@ function ProductCard({ product }) {
         <div className="pt-3 border-t border-primary/5 flex items-center justify-between">
           <div className="flex items-baseline gap-2">
             <span className="text-base font-bold text-primary">
-              ${discountedPrice.toFixed(2)}
+              ৳{discountedPrice.toFixed(2)}
             </span>
             {product.discount > 0 && (
               <span className="text-xs text-primary/40 line-through">
-                ${product.price.toFixed(2)}
+                ৳{product.price.toFixed(2)}
               </span>
             )}
           </div>
