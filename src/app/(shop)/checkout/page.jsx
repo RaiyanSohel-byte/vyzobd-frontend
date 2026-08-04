@@ -566,14 +566,14 @@ export default function CheckoutPage() {
                 {discount > 0 && (
                   <div className="flex justify-between items-center text-accent">
                     <span>Discount</span>
-                    <span className="font-medium">-${discount.toFixed(2)}</span>
+                    <span className="font-medium">-৳{discount.toFixed(2)}</span>
                   </div>
                 )}
               </div>
 
               <div className="flex justify-between items-center mb-8">
                 <span className="text-base font-bold">Total</span>
-                <span className="text-2xl font-bold">${total.toFixed(2)}</span>
+                <span className="text-2xl font-bold">৳{total.toFixed(2)}</span>
               </div>
 
               <button
