@@ -1,28 +1,39 @@
 import Image from "next/image";
 import Link from "next/link";
-import { FiLayers, FiScissors, FiGlobe, FiArrowRight } from "react-icons/fi";
+import {
+  FiLayers,
+  FiScissors,
+  FiGlobe,
+  FiArrowRight,
+  FiAward,
+  FiShoppingBag,
+  FiTruck,
+} from "react-icons/fi";
+import about1 from "../../../../public/about/about1.jpg";
+import about2 from "../../../../public/about/about2.jpg";
+import about3 from "../../../../public/about/about3.jpg";
 
 const BRAND_VALUES = [
   {
     id: "01",
-    icon: FiScissors,
-    title: "Meticulous Craftsmanship",
+    icon: FiAward,
+    title: "Premium Quality",
     description:
-      "Every seam, stitch, and silhouette is engineered for longevity. We partner exclusively with multi-generational artisans who share our unwavering obsession with detail.",
+      "Every product is carefully selected to meet our high standards of quality, durability, and performance, ensuring you receive only the best.",
   },
   {
     id: "02",
-    icon: FiLayers,
-    title: "Architectural Design",
+    icon: FiShoppingBag,
+    title: "Wide Product Selection",
     description:
-      "Inspired by modern architecture, our garments focus on structural integrity, clean lines, and purposeful utility, removing the unnecessary to celebrate the essential.",
+      "From everyday essentials to lifestyle products, we offer a diverse collection that caters to your needs, all in one convenient destination.",
   },
   {
     id: "03",
-    icon: FiGlobe,
-    title: "Sustainable Practices",
+    icon: FiTruck,
+    title: "Fast & Reliable Delivery",
     description:
-      "Luxury shouldn't cost the earth. We source organic, upcycled, and low-impact materials, ensuring our footprint is as minimal as our aesthetic.",
+      "We are committed to delivering your orders quickly and securely, backed by dependable customer support and a seamless shopping experience.",
   },
 ];
 
@@ -36,12 +47,15 @@ export default function AboutSection() {
             Our Philosophy
           </span>
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.1] mb-6">
-            Redefining the modern <br className="hidden sm:block" />
-            wardrobe.
+            Everything You Need, All in
+            <br className="hidden sm:block" />
+            One Place
           </h1>
           <p className="text-lg text-primary/60 font-light leading-relaxed max-w-xl">
-            We believe that what you wear should be an extension of how you
-            live—uncomplicated, purposeful, and beautifully constructed.
+            We believe shopping should be simple, reliable, and enjoyable.
+            That's why we carefully curate quality products across every
+            category, bringing you exceptional value, trusted brands, and a
+            seamless shopping experience.
           </p>
         </div>
 
@@ -51,7 +65,7 @@ export default function AboutSection() {
           <div className="lg:col-span-5 relative">
             <div className="relative aspect-[4/5] w-full rounded-lg overflow-hidden bg-white/50 border border-primary/10 shadow-sm">
               <Image
-                src="/placeholder-about-1.jpg" // Replace with your actual image path
+                src={about1} // Replace with your actual image path
                 alt="Artisan working on fabric"
                 fill
                 className="object-cover hover:scale-105 transition-transform duration-700"
@@ -64,28 +78,30 @@ export default function AboutSection() {
           {/* Right Content & Secondary Image */}
           <div className="lg:col-span-6 lg:col-start-7 flex flex-col justify-center">
             <h2 className="text-2xl sm:text-3xl font-semibold mb-6">
-              Born from a desire for permanence in a disposable world.
+              Built on Quality, Driven by Trust.
             </h2>
             <div className="space-y-6 text-primary/70 font-light text-sm sm:text-base leading-relaxed mb-10">
               <p>
-                Founded in 2026, our studio set out to challenge the relentless
-                cycle of fast fashion. We don't design for seasons; we design
-                for lifetimes. By stripping away fleeting trends, we create
-                foundational pieces that serve as the architecture of your
-                personal style.
+                Founded in 2026, our mission has been simple: to make quality
+                products accessible to everyone. We carefully select and source
+                products from trusted manufacturers and brands, ensuring every
+                item meets our standards for quality, reliability, and value.
               </p>
               <p>
-                Every fabric is meticulously sourced. Every pattern is draped
-                and tested endlessly. The result is a collection of everyday
-                essentials that feel bespoke, offering uncompromising quality
-                without the traditional luxury markup.
+                Whether you're shopping for home essentials, kitchen
+                accessories, lifestyle products, or everyday necessities, we're
+                committed to delivering a seamless shopping experience backed by
+                exceptional customer service, secure shopping, and fast,
+                reliable delivery. Our goal is to become your trusted
+                destination for everything you need—bringing convenience,
+                affordability, and confidence to every purchase.
               </p>
             </div>
 
             {/* Optional Small Secondary Image for visual interest */}
             <div className="relative w-full sm:w-3/4 aspect-[16/9] rounded-lg overflow-hidden border border-primary/10 shadow-sm">
               <Image
-                src="/placeholder-about-2.jpg" // Replace with your actual image path
+                src={about2} // Replace with your actual image path
                 alt="Close up of fabric textures"
                 fill
                 className="object-cover"

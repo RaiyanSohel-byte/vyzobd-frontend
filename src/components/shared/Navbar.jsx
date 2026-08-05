@@ -12,7 +12,7 @@ import {
   FiX,
   FiChevronDown,
 } from "react-icons/fi";
-import logoImg from "../../../public/logos/navLogo.png";
+import logoImg from "../../../public/logos/logo.svg";
 
 import { useAuth } from "@/hooks/useAuth";
 import toast from "react-hot-toast";
@@ -165,6 +165,8 @@ export default function Navbar() {
                     </div>
                   )}
                 </div>{" "}
+              </>
+            : <>
                 <Link
                   href="/cart"
                   className="relative text-primary hover:text-accent transition-colors duration-300 flex items-center justify-center group"
@@ -174,16 +176,16 @@ export default function Navbar() {
                   <span className="absolute -top-1.5 -right-2 bg-accent text-white text-[12px] font-bold w-6 h-6 md:w-5 md:h-5 rounded-full flex items-center justify-center shadow-md">
                     {cartCount}
                   </span>
+                </Link>{" "}
+                <Link
+                  href="/login"
+                  className="hidden sm:flex text-primary hover:text-accent transition-colors duration-300 items-center justify-center gap-2"
+                  aria-label="User Login"
+                >
+                  <FiUser className="w-5 h-5 md:w-6 md:h-6" />{" "}
+                  <h3 className="font-semibold">Login</h3>
                 </Link>
               </>
-            : <Link
-                href="/login"
-                className="hidden sm:flex text-primary hover:text-accent transition-colors duration-300 items-center justify-center gap-2"
-                aria-label="User Login"
-              >
-                <FiUser className="w-5 h-5 md:w-6 md:h-6" />{" "}
-                <h3 className="font-semibold">Login</h3>
-              </Link>
             }
 
             {/* Mobile Menu Toggle Button */}

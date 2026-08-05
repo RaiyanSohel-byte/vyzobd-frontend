@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 // Import your helper function (Adjust the path if your lib folder is located elsewhere)
 import { fetchAPI } from "@/lib/api";
 import AddToCartForm from "@/components/shared/AddToCartForm";
+import Link from "next/link";
 
 const ProductDetails = async ({ params }) => {
   // Await params as required in Next.js 15+

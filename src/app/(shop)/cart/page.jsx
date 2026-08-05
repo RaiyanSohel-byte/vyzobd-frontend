@@ -447,7 +447,7 @@ export default function CartSection() {
 
               <div className="flex justify-between items-center mb-8">
                 <span className="text-base font-bold">Total</span>
-                <span className="text-xl font-bold">${total.toFixed(2)}</span>
+                <span className="text-xl font-bold">৳{total.toFixed(2)}</span>
               </div>
 
               <Link href={"/checkout"}>

@@ -18,82 +18,74 @@ import toast from "react-hot-toast";
 import { cartService } from "@/services/cart.service";
 import { orderService } from "@/services/order.service";
 
-// Bangladesh Locations Data
+// Bangladesh Locations Data (Kept in English for backend/value consistency)
 const bangladeshLocations = {
-  Dhaka: [
-    "Dhaka",
-    "Faridpur",
-    "Gazipur",
-    "Gopalganj",
-    "Kishoreganj",
-    "Madaripur",
-    "Manikganj",
-    "Munshiganj",
-    "Narayanganj",
-    "Narsingdi",
-    "Rajbari",
-    "Shariatpur",
-    "Tangail",
+  ঢাকা: [
+    "ঢাকা",
+    "ফরিদপুর",
+    "গাজীপুর",
+    "গোপালগঞ্জ",
+    "কিশোরগঞ্জ",
+    "মাদারীপুর",
+    "মানিকগঞ্জ",
+    "মুন্সীগঞ্জ",
+    "নারায়ণগঞ্জ",
+    "নরসিংদী",
+    "রাজবাড়ী",
+    "শরীয়তপুর",
+    "টাঙ্গাইল",
   ],
-  Chattogram: [
-    "Bandarban",
-    "Brahmanbaria",
-    "Chandpur",
-    "Chattogram",
-    "Cumilla",
-    "Cox's Bazar",
-    "Feni",
-    "Khagrachari",
-    "Lakshmipur",
-    "Noakhali",
-    "Rangamati",
+  চট্টগ্রাম: [
+    "বান্দরবান",
+    "ব্রাহ্মণবাড়িয়া",
+    "চাঁদপুর",
+    "চট্টগ্রাম",
+    "কুমিল্লা",
+    "কক্সবাজার",
+    "ফেনী",
+    "খাগড়াছড়ি",
+    "লক্ষ্মীপুর",
+    "নোয়াখালী",
+    "রাঙ্গামাটি",
   ],
-  Rajshahi: [
-    "Bogura",
-    "Joypurhat",
-    "Naogaon",
-    "Natore",
-    "Chapainawabganj",
-    "Pabna",
-    "Rajshahi",
-    "Sirajganj",
+  রাজশাহী: [
+    "বগুড়া",
+    "জয়পুরহাট",
+    "নওগাঁ",
+    "নাটোর",
+    "চাঁপাইনবাবগঞ্জ",
+    "পাবনা",
+    "রাজশাহী",
+    "সিরাজগঞ্জ",
   ],
-  Khulna: [
-    "Bagerhat",
-    "Chuadanga",
-    "Jashore",
-    "Jhenaidah",
-    "Khulna",
-    "Kushtia",
-    "Magura",
-    "Meherpur",
-    "Narail",
-    "Satkhira",
+  খুলনা: [
+    "বাগেরহাট",
+    "চুয়াডাঙ্গা",
+    "যশোর",
+    "ঝিনাইদহ",
+    "খুলনা",
+    "কুষ্টিয়া",
+    "মাগুরা",
+    "মেহেরপুর",
+    "নড়াইল",
+    "সাতক্ষীরা",
   ],
-  Barishal: [
-    "Barguna",
-    "Barishal",
-    "Bhola",
-    "Jhalokati",
-    "Patuakhali",
-    "Pirojpur",
+  বরিশাল: ["বরগুনা", "বরিশাল", "ভোলা", "ঝালকাঠি", "পটুয়াখালী", "পিরোজপুর"],
+  সিলেট: ["হবিগঞ্জ", "মৌলভীবাজার", "সুনামগঞ্জ", "সিলেট"],
+  রংপুর: [
+    "দিনাজপুর",
+    "গাইবান্ধা",
+    "কুড়িগ্রাম",
+    "লালমনিরহাট",
+    "নীলফামারী",
+    "পঞ্চগড়",
+    "রংপুর",
+    "ঠাকুরগাঁও",
   ],
-  Sylhet: ["Habiganj", "Moulvibazar", "Sunamganj", "Sylhet"],
-  Rangpur: [
-    "Dinajpur",
-    "Gaibandha",
-    "Kurigram",
-    "Lalmonirhat",
-    "Nilphamari",
-    "Panchagarh",
-    "Rangpur",
-    "Thakurgaon",
-  ],
-  Mymensingh: ["Jamalpur", "Mymensingh", "Netrokona", "Sherpur"],
+  ময়মনসিংহ: ["জামালপুর", "ময়মনসিংহ", "নেত্রকোনা", "শেরপুর"],
 };
-
 export default function CheckoutPage() {
-  const router = useRouter(); // Initialize router for redirection
+  const router = useRouter();
   const [cartItems, setCartItems] = useState([]);
   const [isLoadingCart, setIsLoadingCart] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -101,8 +93,8 @@ export default function CheckoutPage() {
     name: "",
     phone: "",
     address: "",
-    division: "Dhaka",
-    city: "Dhaka", // Represents the District, mapping to your schema's 'city'
+    division: "ঢাকা",
+    city: "ঢাকা",
     postalCode: "",
     country: "Bangladesh",
   });
@@ -113,8 +105,9 @@ export default function CheckoutPage() {
       setCartItems(data.data.items || []);
     } catch (err) {
       console.error(err);
-      console.log(err.response?.data);
-      toast.error(err.response?.data?.message || "Failed to load cart");
+      toast.error(
+        err.response?.data?.message || "কার্ট লোড করতে সমস্যা হয়েছে",
+      );
     } finally {
       setIsLoadingCart(false);
     }
@@ -127,7 +120,6 @@ export default function CheckoutPage() {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
 
-    // If division changes, automatically reset the district (city) to the first item in that division
     if (name === "division") {
       setFormData((prev) => ({
         ...prev,
@@ -139,7 +131,6 @@ export default function CheckoutPage() {
     }
   };
 
-  // UX Functions for Cart Modification
   const handleUpdateQuantity = async (item, newQuantity) => {
     if (newQuantity < 1) return;
 
@@ -150,9 +141,11 @@ export default function CheckoutPage() {
       });
 
       await fetchCart();
-      toast.success("Cart updated");
+      toast.success("কার্ট আপডেট করা হয়েছে");
     } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to update cart");
+      toast.error(
+        err.response?.data?.message || "কার্ট আপডেট করতে সমস্যা হয়েছে",
+      );
     }
   };
 
@@ -163,13 +156,14 @@ export default function CheckoutPage() {
       });
       await fetchCart();
 
-      toast.success("Item removed");
+      toast.success("আইটেম মুছে ফেলা হয়েছে");
     } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to remove item");
+      toast.error(
+        err.response?.data?.message || "আইটেম মুছে ফেলতে সমস্যা হয়েছে",
+      );
     }
   };
 
-  // Calculations matching Mongoose schema fields
   const { subtotal, shippingCost, discount, total } = useMemo(() => {
     const sub = cartItems.reduce((acc, item) => {
       const price = item.product.price;
@@ -194,14 +188,13 @@ export default function CheckoutPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // 1. Validate the request
     if (cartItems.length === 0) {
-      toast.error("Your cart is empty!");
+      toast.error("আপনার কার্টটি খালি!");
       return;
     }
 
     if (!formData.name || !formData.phone || !formData.address) {
-      toast.error("Please fill in all required shipping fields.");
+      toast.error("অনুগ্রহ করে ডেলিভারি ঠিকানার সকল তথ্য প্রদান করুন।");
       return;
     }
 
@@ -228,15 +221,11 @@ export default function CheckoutPage() {
         paymentMethod: "Cash On Delivery",
       };
 
-      // 2. Create the order
       const response = await orderService.createOrder(orderPayload);
-      toast.success("Order placed successfully!");
+      toast.success("অর্ডার সফলভাবে সম্পন্ন হয়েছে!");
 
-      // 3. Clear the user's cart
       await cartService.clearCart();
 
-      // 4. Redirect the user to success page
-      // Extracting the created order ID (adjust depending on your exact API response structure)
       const createdOrderId = response?.data?.data?._id || response?.data?._id;
 
       if (createdOrderId) {
@@ -246,7 +235,9 @@ export default function CheckoutPage() {
       }
     } catch (err) {
       console.log(err.response?.data);
-      toast.error(err.response?.data?.message || "Failed to place order");
+      toast.error(
+        err.response?.data?.message || "অর্ডার প্লেস করতে সমস্যা হয়েছে",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -258,10 +249,10 @@ export default function CheckoutPage() {
         {/* Header Section */}
         <div className="mb-12 border-b border-primary/10 pb-6">
           <span className="inline-block text-accent text-xs font-bold uppercase tracking-[0.2em] mb-4">
-            Secure Checkout
+            নিরাপদ চেকআউট
           </span>
           <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">
-            Complete your order.
+            আপনার অর্ডারটি সম্পন্ন করুন
           </h1>
         </div>
 
@@ -275,7 +266,7 @@ export default function CheckoutPage() {
               <div className="flex items-center gap-3 mb-6 border-b border-primary/10 pb-4">
                 <FiMapPin className="w-5 h-5 text-accent" />
                 <h2 className="text-lg font-bold tracking-tight">
-                  Shipping Address
+                  ডেলিভারি ঠিকানা
                 </h2>
               </div>
 
@@ -285,7 +276,7 @@ export default function CheckoutPage() {
                     htmlFor="name"
                     className="block text-xs uppercase tracking-widest font-semibold text-primary/70 mb-2"
                   >
-                    Full Name
+                    সম্পূর্ণ নাম
                   </label>
                   <input
                     type="text"
@@ -295,7 +286,7 @@ export default function CheckoutPage() {
                     value={formData.name}
                     onChange={handleInputChange}
                     className="w-full bg-secondary border border-primary/20 focus:border-primary focus:ring-1 focus:ring-primary rounded-md px-4 py-3 text-sm transition-all outline-none"
-                    placeholder="Jane Doe"
+                    placeholder="আপনার নাম"
                   />
                 </div>
 
@@ -304,7 +295,7 @@ export default function CheckoutPage() {
                     htmlFor="phone"
                     className="block text-xs uppercase tracking-widest font-semibold text-primary/70 mb-2"
                   >
-                    Phone Number
+                    মোবাইল নম্বর
                   </label>
                   <input
                     type="tel"
@@ -314,7 +305,7 @@ export default function CheckoutPage() {
                     value={formData.phone}
                     onChange={handleInputChange}
                     className="w-full bg-secondary border border-primary/20 focus:border-primary focus:ring-1 focus:ring-primary rounded-md px-4 py-3 text-sm transition-all outline-none"
-                    placeholder="+880 1XXXXXXXXX"
+                    placeholder="০১৭XXXXXXXX"
                   />
                 </div>
 
@@ -323,7 +314,7 @@ export default function CheckoutPage() {
                     htmlFor="address"
                     className="block text-xs uppercase tracking-widest font-semibold text-primary/70 mb-2"
                   >
-                    Street Address
+                    বিস্তারিত ঠিকানা
                   </label>
                   <input
                     type="text"
@@ -333,7 +324,7 @@ export default function CheckoutPage() {
                     value={formData.address}
                     onChange={handleInputChange}
                     className="w-full bg-secondary border border-primary/20 focus:border-primary focus:ring-1 focus:ring-primary rounded-md px-4 py-3 text-sm transition-all outline-none"
-                    placeholder="House/Apartment, Street Name"
+                    placeholder="বাড়ি/ফ্ল্যাট নম্বর, রাস্তার নাম"
                   />
                 </div>
 
@@ -343,7 +334,7 @@ export default function CheckoutPage() {
                     htmlFor="division"
                     className="block text-xs uppercase tracking-widest font-semibold text-primary/70 mb-2"
                   >
-                    Division
+                    বিভাগ
                   </label>
                   <div className="relative">
                     <select
@@ -364,13 +355,13 @@ export default function CheckoutPage() {
                   </div>
                 </div>
 
-                {/* District Dropdown (maps to City in DB) */}
+                {/* District Dropdown */}
                 <div className="relative">
                   <label
                     htmlFor="city"
                     className="block text-xs uppercase tracking-widest font-semibold text-primary/70 mb-2"
                   >
-                    District / City
+                    জেলা / শহর
                   </label>
                   <div className="relative">
                     <select
@@ -396,7 +387,7 @@ export default function CheckoutPage() {
                     htmlFor="postalCode"
                     className="block text-xs uppercase tracking-widest font-semibold text-primary/70 mb-2"
                   >
-                    Postal Code
+                    পোস্টাল কোড
                   </label>
                   <input
                     type="text"
@@ -406,7 +397,7 @@ export default function CheckoutPage() {
                     value={formData.postalCode}
                     onChange={handleInputChange}
                     className="w-full bg-secondary border border-primary/20 focus:border-primary focus:ring-1 focus:ring-primary rounded-md px-4 py-3 text-sm transition-all outline-none"
-                    placeholder="1205"
+                    placeholder="১২০৫"
                   />
                 </div>
 
@@ -415,7 +406,7 @@ export default function CheckoutPage() {
                     htmlFor="country"
                     className="block text-xs uppercase tracking-widest font-semibold text-primary/70 mb-2"
                   >
-                    Country
+                    দেশ
                   </label>
                   <input
                     type="text"
@@ -435,7 +426,7 @@ export default function CheckoutPage() {
               <div className="flex items-center gap-3 mb-6 border-b border-primary/10 pb-4">
                 <FiCreditCard className="w-5 h-5 text-accent" />
                 <h2 className="text-lg font-bold tracking-tight">
-                  Payment Method
+                  পেমেন্ট পদ্ধতি
                 </h2>
               </div>
 
@@ -446,10 +437,10 @@ export default function CheckoutPage() {
                   </div>
                   <div>
                     <span className="block text-sm font-bold">
-                      Cash On Delivery
+                      ক্যাশ অন ডেলিভারি
                     </span>
                     <span className="block text-xs text-primary/60 mt-0.5">
-                      Pay with cash upon delivery.
+                      পণ্য হাতে পেয়ে মূল্য পরিশোধ করুন।
                     </span>
                   </div>
                 </div>
@@ -462,14 +453,14 @@ export default function CheckoutPage() {
             <div className="bg-white p-6 sm:p-8 rounded-lg border border-primary/10 shadow-sm">
               <div className="flex items-center gap-3 mb-6 pb-4 border-b border-primary/10">
                 <FiBox className="w-5 h-5 text-accent" />
-                <h2 className="text-lg font-bold">Order Summary</h2>
+                <h2 className="text-lg font-bold">অর্ডারের সারসংক্ষেপ</h2>
               </div>
 
               {/* Items List */}
               <div className="space-y-4 mb-6 pb-6 border-b border-primary/10">
                 {cartItems.length === 0 && (
                   <p className="text-sm text-primary/60 italic">
-                    Your cart is empty.
+                    আপনার কার্টটি খালি।
                   </p>
                 )}
                 {cartItems.map((item) => (
@@ -520,7 +511,7 @@ export default function CheckoutPage() {
                           className="text-xs text-red-500 hover:text-red-700 flex items-center gap-1 transition-colors"
                         >
                           <FiTrash2 className="w-3 h-3" />
-                          <span>Remove</span>
+                          <span>মুছে ফেলুন</span>
                         </button>
                       </div>
                     </div>
@@ -534,7 +525,7 @@ export default function CheckoutPage() {
               {/* Totals */}
               <div className="space-y-4 text-sm font-light text-primary/80 mb-6 pb-6 border-b border-primary/10">
                 <div className="flex justify-between items-center">
-                  <span>Subtotal</span>
+                  <span>সাবটোটাল</span>
                   <span className="font-medium text-primary">
                     ৳{subtotal.toFixed(2)}
                   </span>
@@ -542,13 +533,13 @@ export default function CheckoutPage() {
 
                 <div className="space-y-2 pt-1">
                   <span className="text-xs font-semibold uppercase tracking-wider text-primary/60 block mb-1">
-                    Shipping Region
+                    শিপিং এরিয়া
                   </span>
                   <div className="text-sm font-medium text-primary bg-primary/5 px-4 py-3 rounded-md border border-primary/10 flex justify-between items-center">
                     <span>
                       {formData.city === "Dhaka" ?
-                        "Inside Dhaka"
-                      : "Outside Dhaka"}
+                        "ঢাকার ভিতরে"
+                      : "ঢাকার বাইরে"}
                     </span>
                     <span className="text-xs opacity-70">
                       ৳{shippingCost.toFixed(2)}
@@ -557,7 +548,7 @@ export default function CheckoutPage() {
                 </div>
 
                 <div className="flex justify-between items-center pt-2">
-                  <span>Shipping Cost</span>
+                  <span>ডেলিভারি চার্জ</span>
                   <span className="font-medium text-primary">
                     ৳{shippingCost.toFixed(2)}
                   </span>
@@ -565,14 +556,14 @@ export default function CheckoutPage() {
 
                 {discount > 0 && (
                   <div className="flex justify-between items-center text-accent">
-                    <span>Discount</span>
+                    <span>ডিসকাউন্ট</span>
                     <span className="font-medium">-৳{discount.toFixed(2)}</span>
                   </div>
                 )}
               </div>
 
               <div className="flex justify-between items-center mb-8">
-                <span className="text-base font-bold">Total</span>
+                <span className="text-base font-bold">সর্বমোট</span>
                 <span className="text-2xl font-bold">৳{total.toFixed(2)}</span>
               </div>
 
@@ -582,9 +573,9 @@ export default function CheckoutPage() {
                 className="w-full bg-accent text-white text-sm font-bold uppercase tracking-widest px-8 py-4 rounded-md hover:bg-primary/90 transition-all shadow-sm flex items-center justify-center gap-2 group mb-4 disabled:opacity-70 disabled:cursor-not-allowed"
               >
                 {isSubmitting ?
-                  <span className="animate-pulse">Processing...</span>
+                  <span className="animate-pulse">প্রক্রিয়াধীন...</span>
                 : <>
-                    Place Order
+                    অর্ডার করুন
                     <FiCheck className="w-4 h-4" />
                   </>
                 }
@@ -592,7 +583,7 @@ export default function CheckoutPage() {
 
               <div className="flex items-center justify-center gap-2 text-xs text-primary/50">
                 <FiLock className="w-3 h-3" />
-                <span>Your information is securely encrypted.</span>
+                <span>আপনার তথ্য সম্পূর্ণ সুরক্ষিত।</span>
               </div>
             </div>
           </div>

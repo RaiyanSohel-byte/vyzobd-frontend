@@ -3,27 +3,38 @@ import Link from "next/link";
 import Image from "next/image";
 import { FiInstagram, FiTwitter, FiFacebook, FiYoutube } from "react-icons/fi";
 import logoImg from "../../../public/logos/navLogo.png";
+import { FaTiktok } from "react-icons/fa";
 
 const FOOTER_LINKS = {
   support: [
-    { name: "Help Center", href: "/help" },
     { name: "FAQs", href: "/faq" },
     { name: "Contact Us", href: "/contact" },
   ],
   company: [
     { name: "About Us", href: "/about" },
     { name: "Sustainability", href: "/sustainability" },
-    { name: "Careers", href: "/careers" },
+    { name: "Refund and Return Policy", href: "/refund" },
     { name: "Terms & Conditions", href: "/terms" },
     { name: "Privacy Policy", href: "/privacy" },
   ],
 };
 
 const SOCIAL_LINKS = [
-  { icon: FiInstagram, href: "#", label: "Instagram" },
-  { icon: FiTwitter, href: "#", label: "Twitter" },
-  { icon: FiFacebook, href: "#", label: "Facebook" },
-  { icon: FiYoutube, href: "#", label: "YouTube" },
+  {
+    icon: FiInstagram,
+    href: "https://www.instagram.com/vyzobd?igsh=MXdwZ3hjeTV0NXMwbA==",
+    label: "Instagram",
+  },
+  {
+    icon: FaTiktok,
+    href: "https://www.tiktok.com/@vyzobd?_r=1&_t=ZS-98caTAYphiv",
+    label: "Tiktok",
+  },
+  {
+    icon: FiFacebook,
+    href: "https://www.facebook.com/share/1KLi3GurCp",
+    label: "Facebook",
+  },
 ];
 
 export default function Footer() {
@@ -44,8 +55,8 @@ export default function Footer() {
             </Link>
 
             <p className="text-secondary/70 text-sm leading-relaxed max-w-sm mb-8 font-light">
-              Elevating everyday essentials through meticulous craftsmanship,
-              sustainable practices, and modern architectural silhouettes.
+              Discover thoughtfully selected products that combine quality,
+              functionality, and modern design to enhance your daily life.
             </p>
 
             {/* Social Icons */}
@@ -54,6 +65,7 @@ export default function Footer() {
                 const Icon = social.icon;
                 return (
                   <a
+                    target="_blank"
                     key={social.label}
                     href={social.href}
                     aria-label={social.label}
@@ -113,7 +125,7 @@ export default function Footer() {
         {/* Bottom Section: Copyright & Legal */}
         <div className="pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-secondary/50 text-xs tracking-wide">
-            &copy; {currentYear} Store Inc. All rights reserved.
+            &copy; {currentYear} VyzoBD All rights reserved.
           </p>
           <div className="flex items-center space-x-6 text-secondary/50 text-xs tracking-wide">
             <span>Bangladesh</span>
