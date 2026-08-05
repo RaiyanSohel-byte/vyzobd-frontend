@@ -2,7 +2,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { FiInstagram, FiTwitter, FiFacebook, FiYoutube } from "react-icons/fi";
-import logoImg from "../../../public/logos/navLogo.png";
+import logoImg from "../../../public/logos/logowhite.svg";
 import { FaTiktok } from "react-icons/fa";
 
 const FOOTER_LINKS = {
@@ -47,11 +47,14 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-12 gap-12 lg:gap-8 mb-16">
           {/* Brand Column - Expanded to take up half the grid for a balanced two-sided layout */}
           <div className="md:col-span-6 lg:col-span-5 flex flex-col items-start">
-            <Link
-              href="/"
-              className="mb-8 inline-flex items-center justify-center bg-secondary px-5 py-3 rounded-md transition-transform duration-300 hover:scale-105 shadow-sm"
-            >
-              <Image src={logoImg} width={64} height={64} alt="Store Logo" />
+            <Link href="/">
+              <Image
+                src={logoImg}
+                width={160}
+                height={64}
+                alt="Store Logo"
+                className="mb-4"
+              />
             </Link>
 
             <p className="text-secondary/70 text-sm leading-relaxed max-w-sm mb-8 font-light">

@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 import { fetchAPI } from "@/lib/api";
 import AddToCartForm from "@/components/shared/AddToCartForm";
 import Link from "next/link";
+import ProductTabs from "@/components/shared/ProductTabs";
 
 const ProductDetails = async ({ params }) => {
   // Await params as required in Next.js 15+
@@ -74,7 +75,7 @@ const ProductDetails = async ({ params }) => {
             </div>
 
             {/* Main Image */}
-            <div className="flex-grow aspect-[3/4] bg-white border border-primary/10 flex items-center justify-center relative overflow-hidden">
+            <div className="flex-grow aspect-[3/4] bg-white border border-primary/10 flex items-center justify-center relative overflow-hidden h-120">
               <img
                 src={mainImage}
                 alt={product.title}
@@ -117,11 +118,6 @@ const ProductDetails = async ({ params }) => {
               )}
             </div>
 
-            {/* Description */}
-            <p className="text-sm text-primary/70 font-light leading-relaxed mb-8">
-              {product.description}
-            </p>
-
             <hr className="border-primary/10 mb-8" />
 
             <AddToCartForm product={product} />
@@ -129,6 +125,8 @@ const ProductDetails = async ({ params }) => {
             <hr className="border-primary/10 my-10" />
           </div>
         </div>
+        {/* Description */}
+        <ProductTabs product={product} />
       </div>
     </div>
   );
