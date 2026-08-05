@@ -12,6 +12,7 @@ import {
   FiDownload,
   FiAlertTriangle,
   FiX,
+  FiUploadCloud,
 } from "react-icons/fi";
 import { toast } from "react-hot-toast";
 import { productService } from "@/services/product.service";
@@ -25,8 +26,8 @@ const initialFormState = {
   description: "",
   price: "",
   discount: 0,
-  category: "", // This will now store the Category ObjectId
-  images: "",
+  category: "",
+  images: [],
   stock: 0,
   isFeatured: false,
 };
@@ -180,7 +181,7 @@ export default function ProductsPage() {
       price: product.price ?? "",
       discount: product.discount ?? 0,
       category: product.category?._id || product.category || "", // Use ObjectId
-      images: Array.isArray(product.images) ? product.images.join("\n") : "",
+      images: [],
       stock: product.stock ?? 0,
       isFeatured: Boolean(product.isFeatured),
     });
@@ -217,29 +218,30 @@ export default function ProductsPage() {
     e.preventDefault();
     setIsSubmitting(true);
 
-    const payload = {
-      title: formData.title.trim(),
-      slug:
-        formData.slug.trim() ||
-        formData.title
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, "-")
-          .replace(/(^-|-$)+/g, ""),
-      description: formData.description.trim(),
-      price: Number(formData.price),
-      discount: Number(formData.discount) || 0,
-      category: formData.category, // Now sending ObjectId
-      images: formData.images
-        .split("\n")
-        .map((url) => url.trim())
-        .filter(Boolean),
-      stock: Number(formData.stock) || 0,
-      isFeatured: formData.isFeatured,
-    };
+    const formDataPayload = new FormData();
+
+    formDataPayload.append("title", formData.title);
+
+    formDataPayload.append("slug", formData.slug);
+
+    formDataPayload.append("description", formData.description);
+
+    formDataPayload.append("price", formData.price);
+
+    formDataPayload.append("discount", formData.discount);
+
+    formDataPayload.append("category", formData.category);
+
+    formDataPayload.append("stock", formData.stock);
+    formDataPayload.append("isFeatured", String(formData.isFeatured));
+
+    formData.images.forEach((image) => {
+      formDataPayload.append("images", image);
+    });
 
     try {
       if (productModal.mode === "add") {
-        const { data } = await productService.createProduct(payload);
+        const { data } = await productService.createProduct(formDataPayload);
         const createdProduct = data.data || data;
 
         // If API doesn't populate category on creation, manually populate it for UI state
@@ -255,7 +257,7 @@ export default function ProductsPage() {
       } else {
         const { data } = await productService.updateProduct(
           productModal.productId,
-          payload,
+          formDataPayload,
         );
         const updatedProduct = data.data || data;
 
@@ -291,6 +293,23 @@ export default function ProductsPage() {
     }
     exportProductsToCSV(filteredProducts);
     toast.success("CSV downloaded successfully");
+  };
+  const handleImageChange = (e) => {
+    if (e.target.files) {
+      const newFiles = Array.from(e.target.files);
+      setFormData((prev) => ({
+        ...prev,
+        // Appends new files to the existing array instead of replacing them
+        images: [...(prev.images || []), ...newFiles],
+      }));
+    }
+  };
+
+  const removeImage = (indexToRemove) => {
+    setFormData((prev) => ({
+      ...prev,
+      images: prev.images.filter((_, index) => index !== indexToRemove),
+    }));
   };
 
   if (loading) {
@@ -674,18 +693,66 @@ export default function ProductsPage() {
               </div>
 
               {/* Image URLs */}
-              <div>
-                <label className="block text-xs font-semibold text-primary/70 mb-1">
-                  Image URLs (One per line)
+              <div className="space-y-4">
+                <label className="block text-xs uppercase tracking-widest font-semibold text-primary/70 mb-1">
+                  Product Images
                 </label>
-                <textarea
-                  name="images"
-                  rows={2}
-                  value={formData.images}
-                  onChange={handleInputChange}
-                  placeholder="https://example.com/image1.jpg&#10;https://example.com/image2.jpg"
-                  className="w-full bg-secondary text-primary text-sm px-3 py-2 rounded-md border border-primary/10 focus:outline-none focus:border-accent resize-none"
-                />
+
+                {/* Image Previews */}
+                {formData.images?.length > 0 && (
+                  <div className="flex gap-4 flex-wrap">
+                    {formData.images.map((file, index) => (
+                      <div
+                        key={index}
+                        className="relative group w-24 h-24 rounded-lg overflow-hidden border border-primary/20"
+                      >
+                        {/* Using a standard img tag is safer for blob URLs to avoid Next.js optimization errors */}
+                        <img
+                          src={URL.createObjectURL(file)}
+                          alt={`Preview ${index}`}
+                          className="w-full h-full object-cover"
+                        />
+
+                        {/* Hover Overlay with Remove Button */}
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <button
+                            type="button"
+                            onClick={() => removeImage(index)}
+                            className="bg-red-500 text-white rounded-full p-1.5 hover:bg-red-600 transition-colors"
+                            title="Remove image"
+                          >
+                            <FiX className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Custom Upload Area */}
+                <div className="relative">
+                  <input
+                    type="file"
+                    id="product-images"
+                    name="images"
+                    multiple
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="hidden" // Hides the ugly default input
+                  />
+                  <label
+                    htmlFor="product-images"
+                    className="flex flex-col items-center justify-center w-full py-8 border-2 border-dashed border-primary/20 rounded-lg cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-all text-primary/60 hover:text-primary"
+                  >
+                    <FiUploadCloud className="w-8 h-8 mb-3 opacity-70" />
+                    <span className="text-sm font-medium">
+                      Click to upload images
+                    </span>
+                    <span className="text-xs opacity-60 mt-1">
+                      PNG, JPG, WEBP accepted
+                    </span>
+                  </label>
+                </div>
               </div>
 
               {/* Featured Toggle */}

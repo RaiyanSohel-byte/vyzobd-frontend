@@ -7,9 +7,13 @@ export const productService = {
   getProduct: (id) => api.get(`/api/products/${id}`),
 
   // Admin
-  createProduct: (data) => api.post("/api/products", data),
+  createProduct(data) {
+    return api.post("/api/products", data);
+  },
 
-  updateProduct: (id, data) => api.put(`/api/products/${id}`, data),
+  updateProduct(id, data) {
+    return api.put(`/api/products/${id}`, data);
+  },
 
   deleteProduct: (id) => api.delete(`/api/products/${id}`),
 };
