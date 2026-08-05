@@ -59,7 +59,7 @@ export default function HeroSlider() {
   // Auto-play functionality with updated timing parameter
   useEffect(() => {
     if (isHovered) return;
-    const timer = setInterval(nextSlide, 8000);
+    const timer = setInterval(nextSlide, 4000);
     return () => clearInterval(timer);
   }, [nextSlide, isHovered]);
 
