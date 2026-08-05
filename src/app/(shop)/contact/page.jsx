@@ -20,15 +20,19 @@ const CONTACT_INFO = [
     id: "phone",
     icon: FiPhone,
     title: "Call Us",
-    details: ["+880 1234 567 890", "Mon-Fri, 9am - 6pm (BDT)"],
+    details: ["+880 1622862227", "Mon-Fri, 9am - 6pm (BDT)"],
   },
   {
     id: "location",
     icon: FiMapPin,
-    title: "Visit Studio",
-    details: ["123 Architectural Avenue", "Dhaka 1212, Bangladesh"],
+    title: "Location",
+    details: [
+      "House- 30 , Road- 14",
+      "Block- D , Mirpur-12 Dhaka 1216 Bangladesh",
+    ],
   },
 ];
+//House- 30, Road- 14, Block- D, Mirpur-12 Dhaka 1216 Bangladesh
 
 export default function ContactSection() {
   const [isSubmitting, setIsSubmitting] = useState(false);
